@@ -1,0 +1,21 @@
+# Configuración privada y credenciales
+config.php
+.env
+.env.*
+!.env.example
+app.key*
+*.pem
+*.key
+
+# Datos, documentos y respaldos
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+*.ox3bak
+uploads/
+backups/
+audit.anchor
+
+# Archivos del sistema
+.DS_Store
