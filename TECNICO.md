@@ -2,6 +2,8 @@
 
 Fecha de revisión: 24 de octubre de 2026. Documento basado en el código del repositorio; no constituye una verificación del servidor de producción. No contiene credenciales ni datos de las bases locales.
 
+> **Nota.** Este documento se revisó el 24-10-2026. Desde entonces se agregaron los módulos **Cursos** (`cursos.php`, `cursos_view.php`, `cursos_xlsx.php`), **Proformas** (`proforma.php`, `proforma_view.php`) y el soporte bilingüe y multimoneda (`intl.php`), además de la instalación como app (PWA). La carpeta `private/private/` ya no existe. El alcance del MVP y los incrementos están en [README.md](README.md).
+
 ## 1. Propósito y alcance
 
 Aplicación web de gestión documental, comercial y contable para OX3 y MRM. Incluye proyectos y carpetas, órdenes de compra, cotizaciones, movimientos contables, rendiciones, presupuestos, indicadores, usuarios, notificaciones y respaldos cifrados.

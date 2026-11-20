@@ -773,3 +773,112 @@ tr.ps-over td{background:#fff7f6}
 .side .co-switch{margin:0 2px 8px}
 .co-pill span{display:none}
 }
+/* ---------- Cursos: diseño, evaluación, costos fijos e historial (v12) ---------- */
+.cu-v0{background:#eef1f5;color:#56697d}.cu-v1{background:#fde8e6;color:#a43128}.cu-v2{background:#fdf3d6;color:#8a5a00}.cu-v3{background:#e4f6ee;color:#1d7a50}
+.cu-mods,.cu-fixed{display:flex;flex-direction:column;gap:8px}
+.cu-mod{display:grid;grid-template-columns:minmax(160px,1.1fr) 92px 92px minmax(200px,2fr);gap:8px}
+.cu-fx{display:grid;grid-template-columns:minmax(180px,1.4fr) 170px 170px;gap:8px}
+.cu-mod input,.cu-fx input,.cu-fx select{margin:0}
+.cu-mod-head span,.cu-fx-head span{font-size:11px;font-weight:700;color:#7c8b9a;text-transform:uppercase;letter-spacing:.6px}
+.cu-lines .ps-line{grid-template-columns:minmax(180px,1.6fr) 64px 96px 112px 132px minmax(150px,1fr)}
+.cu-hours{margin-top:14px;max-width:420px;grid-template-columns:1fr}
+.cu-grid4{grid-template-columns:repeat(4,1fr)}.cu-grid3{grid-template-columns:repeat(3,1fr)}
+.cu-fixnote{display:flex;gap:8px;align-items:flex-start;margin:12px 0 0;padding:10px 12px;border-radius:8px;background:#f2f6fb;font-size:13px;color:#3d4f61}
+.cu-fixnote .ic{flex:none;width:16px;height:16px;margin-top:1px;color:var(--blue)}
+.cu-verdict{display:flex;gap:14px;align-items:center;padding:14px 18px;margin:0 0 18px;border-radius:var(--radius);border:1px solid var(--line);background:#fff}
+.cu-verdict b{display:block;font-size:17px}.cu-verdict span{font-size:13.5px;color:var(--muted)}
+.cu-verdict-ic .ic{width:34px;height:34px;padding:7px;border-radius:50%}
+.cu-vbox3{border-color:#bfe3cf;background:#f3fbf7}.cu-vbox3 .ic{background:#e4f6ee;color:#1d7a50}
+.cu-vbox2{border-color:#f1dc9c;background:#fffbef}.cu-vbox2 .ic{background:#fdf3d6;color:#8a5a00}
+.cu-vbox1{border-color:#f3c3bd;background:#fff7f6}.cu-vbox1 .ic{background:#fde8e6;color:#a43128}
+.cu-vbox0 .ic{background:#eef1f5;color:#56697d}
+.cu-checks{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.cu-checks li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4}
+.cu-checks small{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;color:#7c8b9a}
+.cu-dot .ic{width:22px;height:22px;padding:4px;border-radius:50%;flex:none}
+.cu-l0 .cu-dot .ic{background:#e4f6ee;color:#1d7a50}.cu-l1 .cu-dot .ic{background:#fdf3d6;color:#8a5a00}.cu-l2 .cu-dot .ic{background:#fde8e6;color:#a43128}
+.cu-checks .cc-inline{display:inline}
+.cu-apply{margin-top:4px}
+.cu-warn{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.cu-warn .ic{width:18px;height:18px;flex:none}.cu-warn span{flex:1;min-width:220px}
+.cu-alert-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+tr.cu-cur td{background:#f3f8fe}
+.cu-tag{display:inline-block;margin-left:4px;padding:1px 7px;border-radius:10px;background:#e9eef4;color:#4b6a89;font-size:11px;font-weight:700}
+.cu-cotform{width:min(360px,86vw)}
+.cu-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cu-stat3{grid-template-columns:repeat(3,1fr)}
+.cu-reg td small{display:block}
+@media(max-width:1000px){.cu-grid4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){
+.cu-mod,.cu-fx{grid-template-columns:1fr 1fr;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.cu-mod label:nth-child(1),.cu-mod label:nth-child(4),.cu-fx label:nth-child(1){grid-column:1/-1}
+.cu-mod-head,.cu-fx-head{display:none}
+.cu-grid3,.cu-stat3{grid-template-columns:1fr}
+.cu-verdict{align-items:flex-start}
+}
+button.icon-btn{background:none;border:0;padding:0;cursor:pointer;box-shadow:none}
+.alert.cu-warn{background:#fffbef;border-color:#f1dc9c;color:#6b4a00}
+.cu-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.cu-steps .card{margin:0}
+.cu-dl{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.cu-tips{margin:0;padding-left:18px;font-size:14px;line-height:1.5;display:grid;gap:6px}
+.cu-imp td small{display:block}.cu-imp small.cu-note{color:#8a5a00}
+@media(max-width:1000px){.cu-steps{grid-template-columns:1fr}}
+/* Cursos: revisión de la carga masiva */
+.cu-rev h2{display:flex;align-items:center;gap:8px}.cu-rev h2 .ic{width:20px;height:20px;color:#1d7a50}.cu-rev-fail{border-color:#f0c4bf}.cu-rev-fail h2 .ic{color:#a43128}
+.cu-rev-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.cu-rev-head h2{margin:0}
+.cu-check{list-style:none;margin:14px 0;padding:0;display:grid;gap:8px}.cu-check li{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.cu-check .cu-mk{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:#eef1f5;color:#56697d}
+.cu-check li.ok .cu-mk{background:#e4f6ee;color:#1d7a50}.cu-check li.bad .cu-mk{background:#fde8e6;color:#a43128}.cu-check li.off{color:#8a97a6}
+.cu-check li b{display:block;color:#a43128;margin-top:3px;font-weight:600}.cu-check li small{display:block;color:#8a97a6}
+.cu-check-row{display:flex;flex-wrap:wrap;gap:8px 18px}.cu-check-row li{font-size:13px;align-items:center}
+.cu-iss td{vertical-align:top}.cu-iss code{font-size:12px;background:#f3f5f8;padding:1px 5px;border-radius:4px;word-break:break-word}
+.ps-kv dt small{display:block;font-size:12px;color:#8a97a6;margin-top:1px}.cu-sc td small{display:block;color:var(--muted);font-size:12px}
+.cu-sc th small{display:block;font-weight:500;text-transform:none;letter-spacing:0}
+/* Cotizaciones en inglés / otras monedas y proformas (v16) */
+.doc-tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.6px;color:#1669c1;background:#e8f2fc;border:1px solid #cfe2f7;border-radius:6px;padding:1px 6px;vertical-align:middle;white-space:nowrap}
+h1 .doc-tag{font-size:12px;margin-left:6px}
+.hint-more{margin-top:8px}
+.hint-more>summary{cursor:pointer;font-size:13px;color:var(--blue);font-weight:600}
+.hint-more>summary:hover{text-decoration:underline}
+.hint-more>.oc-grid{margin-top:12px}
+details.cfg-more>summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:2px}
+details.cfg-more>summary::-webkit-details-marker{display:none}
+details.cfg-more>summary h2{display:flex;align-items:center;gap:8px;margin:0}
+details.cfg-more>summary h2::after{content:"▾";font-size:13px;color:var(--muted);margin-left:auto}
+details.cfg-more[open]>summary{margin-bottom:14px}
+details.cfg-more[open]>summary h2::after{content:"▴"}
+details.cfg-more>summary .ic{width:18px;height:18px;color:var(--blue)}
+details.cfg-more .oc-firmas,details.cfg-more .oc-conds,details.cfg-more .oc-grid{margin-bottom:12px}
+.pop-body a.btn{justify-content:flex-start}
+.pf-amounts{grid-template-columns:repeat(5,1fr);margin-top:14px}
+.pf-pay{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
+.pf-pay .s-obs{margin-top:0}
+.pf-bank{display:grid;grid-template-columns:auto 1fr;gap:1px 10px;margin:0;font-size:9pt}
+.pf-bank dt{color:var(--s-grey)}
+.pf-bank dd{margin:0;overflow-wrap:anywhere}
+.pf-decl{font-size:8pt;color:var(--s-grey);margin-top:12px}
+.pf-sheet .s-sign{margin-top:30px}
+@media (max-width:760px){.pf-amounts{grid-template-columns:repeat(2,1fr)}}
+.pf-sheet{font-size:9.5pt;padding-top:.45in;padding-bottom:.4in}
+.pf-sheet .accent{margin:8px 0 10px}
+.pf-sheet .s-parties>div{font-size:9pt;line-height:1.4}
+.pf-sheet .s-summary{margin-top:10px}
+.pf-sheet .s-summary .obj,.pf-sheet .s-summary .tot{padding:8px 12px}
+.pf-sheet .s-sec{margin:11px 0 5px}
+.pf-sheet table.items td{padding:4px 6px}
+.pf-sheet table.items tfoot td{padding:2px 6px}
+.pf-sheet .s-conds{font-size:8.5pt}
+.pf-sheet .s-sign{margin-top:26px}
+.pf-sheet table.items tfoot td.r.muted{white-space:nowrap}
+.pf-sheet .s-head img{width:1.3in}
+.pf-sheet .s-title .meta{line-height:1.4}
+.pf-sheet .s-sign{margin-top:20px}
+.pf-sheet .pf-decl{margin-top:8px}
+.pf-sheet table.items tfoot tr.total td:first-child{font-size:8pt;vertical-align:middle}
+.pf-sheet{line-height:1.3;padding-top:.4in;padding-bottom:.35in}
+.pf-sheet .s-parties>div{line-height:1.35}
+
+/* Aviso de lo que no suman el Resumen y el Dashboard (v17) */
+.cc-nc{margin:-8px 0 20px;font-size:14px;line-height:1.45}
+.cc-nc ul{margin:6px 0 0;padding-left:20px}
+.cc-nc li+li{margin-top:4px}
+.cc-nc a{font-weight:600}

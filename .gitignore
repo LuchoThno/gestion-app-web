@@ -14,6 +14,7 @@ app.key*
 *.db-*
 *.ox3bak
 uploads/
+private/empresas/
 backups/
 audit.anchor
 
