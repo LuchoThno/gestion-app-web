@@ -1,14 +1,37 @@
-# OX3 Gestión
+# Plataforma web multiempresa para la gestión documental, comercial y financiera de pequeñas empresas de servicios
 
-Plataforma web multiempresa con la que **OX3 Capacitaciones** y **Magallanes ROV Marine (MRM)** centralizan sus documentos, cotizaciones, órdenes de compra, ingresos, gastos, rendiciones y presupuestos, con datos separados por empresa y trazabilidad segura.
+**Caso: OX3 Capacitaciones y Magallanes ROV Marine** · Proyecto de título, Ingeniería en Computación e Informática, Universidad Gabriela Mistral · Luis Elías Vargas Vergara
 
-Este repositorio es el artefacto del trabajo de título. Contiene el código de la plataforma en producción (`gestion.ox3.cl`), organizado según el producto mínimo viable (MVP) y los incrementos definidos en la Solemne I.
+Plataforma web con la que dos pequeñas empresas de servicios que comparten gerencia y personal administrativo, **OX3 Capacitaciones** (organismo técnico de capacitación) y **Magallanes ROV Marine** (inspección e ingeniería submarina con ROV), gestionan cada curso, proyecto u operación desde un solo lugar: documentos, cotizaciones, órdenes de compra, ingresos, gastos, rendiciones y presupuestos, con los datos de cada empresa separados y trazabilidad segura.
+
+Este repositorio contiene el código de la plataforma (en producción como **OX3 Gestión**, `gestion.ox3.cl`), organizado según el producto mínimo viable (MVP) y los incrementos definidos en la Solemne I.
 
 - **Tecnología:** PHP 8.3 y SQLite, sin dependencias externas, sin compilación y sin JavaScript en las páginas internas.
 - **Despliegue:** hosting compartido (Hostinger).
 - **Uso:** desde el navegador, en computador o celular, o instalada como app (ver [Instalar como app](#instalar-como-app)).
 
 > La documentación técnica (arquitectura, tablas, seguridad y casos de uso) está en [TECNICO.md](TECNICO.md).
+
+## Problema
+
+> OX3 y MRM no cuentan con un mecanismo común y seguro para registrar, vincular y consultar la información documental, comercial y financiera de cada curso, proyecto u operación, con los datos de cada empresa separados. Como consecuencia, la información queda dispersa e incompleta, las aprobaciones no dejan trazabilidad y el resultado de cada servicio solo se conoce después de su cierre, cuando ya no es posible corregir desvíos.
+
+| Dimensión | Descripción | Respuesta de la plataforma |
+| --- | --- | --- |
+| D1. Dispersión | La información de un mismo servicio está repartida en soportes que no se comunican. | Registro único por servicio: documentos, cotizaciones, compras y gastos ligados al proyecto o centro de costo. |
+| D2. Trazabilidad y seguridad | No queda constancia de quién registró, aprobó o consultó cada dato. | Roles, segundo factor, bitácora encadenada y respaldos cifrados. |
+| D3. Separación entre empresas | Al compartir personas y equipos, la información de OX3 y MRM puede mezclarse. | Una base de datos por empresa y acceso solo a las empresas autorizadas. |
+| D4. Oportunidad | El control económico del servicio ocurre al cierre y no durante la ejecución. | Presupuestos con control de ejecución, semáforo y alertas. |
+
+## Arquitectura multiempresa
+
+Monolito modular en PHP con un punto de entrada único (`public_html/index.php`) y el código y los datos fuera de la raíz web (`private/`).
+
+- **Usuarios comunes, datos separados:** la base principal guarda los usuarios, los intentos de ingreso y las asignaciones a empresas. Cada empresa tiene su propia base SQLite, carpeta de documentos, correlativos, configuración y bitácora.
+- **Selección de empresa:** al ingresar, cada usuario ve solo las empresas que tiene autorizadas; los administradores ven todas. El sistema abre únicamente la base de la empresa elegida y adjunta la principal para consultar los usuarios.
+- **Contexto protegido:** cada formulario lleva la empresa en que se abrió; si el usuario cambió de empresa en otra pestaña, la operación se rechaza en lugar de guardarse en la empresa equivocada.
+- **Identidad por empresa:** logos, datos de emisor y numeración de cotizaciones, órdenes de compra y proformas cambian según la empresa activa.
+- **Extensible:** agregar una empresa consiste en declararla en `empresas()` (`private/app.php`); su base se crea con el mismo esquema al primer uso.
 
 ## Hipótesis de valor
 
