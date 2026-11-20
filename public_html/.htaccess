@@ -3,3 +3,6 @@ DirectoryIndex index.php
 <FilesMatch "^\.">
 Require all denied
 </FilesMatch>
+
+# Manifiesto de la app instalable (PWA)
+AddType application/manifest+json .webmanifest

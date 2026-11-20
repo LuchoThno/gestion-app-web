@@ -58,11 +58,11 @@ function turnstileValid(string $secret, string $token): bool {
 }
 /** Token del formulario y la empresa en que se abrió (si se cambió de empresa en otra pestaña, el envío se rechaza). */
 function csrf(): string { global $empresaSet, $empresaKey; return '<input type="hidden" name="csrf" value="'.e($_SESSION['csrf']).'">'.($empresaSet?'<input type="hidden" name="emp" value="'.e($empresaKey).'">':''); }
-const APP_TABS=['account','users','activity','oc','oc_new','oc_cfg','cot','cot_new','cot_cfg','cc','cc_movs','cc_new','cc_rends','cc_rend_new','cc_cfg','pend','security','dash','ps','ps_new'];
-/** Redirige a index.php con parámetros enteros ya validados (p, f, preview, oc, cot, mov, rend, pres, edit, tab, vista). */
+const APP_TABS=['account','users','activity','oc','oc_new','oc_cfg','cot','cot_new','cot_cfg','cc','cc_movs','cc_new','cc_rends','cc_rend_new','cc_cfg','pend','security','dash','ps','ps_new','cu','cu_new','cu_cfg','cu_import','pf','pf_new','pf_cfg'];
+/** Redirige a index.php con parámetros enteros ya validados (p, f, preview, oc, cot, pf, mov, rend, pres, curso, ver, edit, tab, vista). */
 function go(string $message='', array $to=[]): never {
     $_SESSION['message']=$message;
-    $q=[]; foreach($to as $k=>$v) if(in_array($k,['p','f','preview','oc','cot','mov','rend','pres','edit'],true) && is_int($v) && $v>=0) $q[$k]=$v; elseif($k==='tab' && in_array($v,APP_TABS,true)) $q[$k]=$v; elseif($k==='vista' && is_string($v) && preg_match('/^[a-z]{3,12}$/',$v)) $q[$k]=$v;
+    $q=[]; foreach($to as $k=>$v) if(in_array($k,['p','f','preview','oc','cot','pf','mov','rend','pres','edit','curso','ver'],true) && is_int($v) && $v>=0) $q[$k]=$v; elseif($k==='tab' && in_array($v,APP_TABS,true)) $q[$k]=$v; elseif($k==='vista' && is_string($v) && preg_match('/^[a-z]{3,12}$/',$v)) $q[$k]=$v;
     header('Location: index.php'.($q?'?'.http_build_query($q):''),true,303); exit;
 }
 function post(string $k): string { return is_string($_POST[$k]??null) ? trim($_POST[$k]) : ''; }
@@ -78,19 +78,22 @@ if (!extension_loaded('pdo_sqlite') || !extension_loaded('fileinfo') || !class_e
 /**
  * Empresas de la plataforma. Cada una tiene su propia base, documentos, bitácora y logo; los usuarios son comunes.
  * 'dir' vacío = la carpeta private (OX3, los datos de siempre). 'emisor' son los datos iniciales para OC y cotizaciones
- * (después se editan en la configuración de cada módulo).
+ * (después se editan en la configuración de cada módulo). 'cursos': muestra el módulo Cursos (MRM hace operaciones con ROV, no capacitación).
+ * 'proformas': muestra el módulo Proformas y el atajo de cotización en inglés (acuerdos internacionales de MRM).
  */
 const EMPRESA_BASE='ox3';
 function empresas(): array {
     return [
-        'ox3'=>['nombre'=>'OX3 Capacitaciones','corto'=>'OX3','lema'=>'Capacitaciones Chile','logo'=>'assets/logo-ox3.png','web'=>'www.ox3.cl','dir'=>'',
+        'ox3'=>['nombre'=>'OX3 Capacitaciones','corto'=>'OX3','lema'=>'Capacitaciones Chile','logo'=>'assets/logo-ox3.png','web'=>'www.ox3.cl','dir'=>'','cursos'=>true,'proformas'=>false,
             'emisor'=>['razon'=>'Capacitaciones OX3 Chile SpA','rut'=>'77.927.027-0','giro'=>'Capacitación','direccion'=>'Mejicana 518, Of. 1, Punta Arenas','email'=>'contacto@ox3.cl','web'=>'www.ox3.cl']],
-        'mrm'=>['nombre'=>'Magallanes ROV Marine','corto'=>'MRM','lema'=>'Marine Robotics & Subsea Engineering','logo'=>'assets/logo-mrm.png','web'=>'www.magallanesrovmarine.cl','dir'=>'empresas/mrm',
+        'mrm'=>['nombre'=>'Magallanes ROV Marine','corto'=>'MRM','lema'=>'Marine Robotics & Subsea Engineering','logo'=>'assets/logo-mrm.png','web'=>'www.magallanesrovmarine.cl','dir'=>'empresas/mrm','cursos'=>false,'proformas'=>true,
             'emisor'=>['razon'=>'Magallanes ROV Marine','rut'=>'','giro'=>'Robótica marina e ingeniería submarina','direccion'=>'Punta Arenas','email'=>'contacto@magallanesrovmarine.cl','web'=>'www.magallanesrovmarine.cl']],
     ];
 }
 /** Empresa en uso (con su clave en 'key'). */
 function empresa(): array { global $empresaKey; $k=$empresaKey??EMPRESA_BASE; return empresas()[$k]+['key'=>$k]; }
+/** Texto según el giro de la empresa en uso: capacitación (OX3) o inspecciones y trabajos con ROV (MRM, sin cursos). */
+function txEmp(string $capacitacion, string $rov): string { return empresa()['cursos'] ? $capacitacion : $rov; }
 /** Carpeta de datos de una empresa: gestion.sqlite, uploads y audit.anchor. */
 function dataDir(?string $k=null): string { global $empresaKey; $d=empresas()[$k??$empresaKey??EMPRESA_BASE]['dir']; return __DIR__.($d!==''?'/'.$d:''); }
 /** En la base de una empresa adicional, la tabla users está en la base principal (adjunta como "core"):
@@ -181,16 +184,22 @@ require __DIR__.'/qr.php';
 $user = isset($_SESSION['uid']) ? query('SELECT * FROM users WHERE id=? AND active=1',[$_SESSION['uid']])->fetch(PDO::FETCH_ASSOC) : false;
 if ($user && !hash_equals(hash('sha256',$user['password']), (string)($_SESSION['auth_version']??''))) { unset($_SESSION['uid'],$_SESSION['auth_version']); $user=false; }
 $installed = (int)query('SELECT COUNT(*) FROM users')->fetchColumn()>0;
-$categories=['Administración','Cursos y alumnos','Certificados','Comercial','Operaciones','Otros'];
+$categories=empresa()['cursos'] ? ['Administración','Cursos y alumnos','Certificados','Comercial','Operaciones','Otros']
+    : ['Administración','Inspecciones y trabajos ROV','Informes técnicos','Certificados','Comercial','Operaciones','Otros'];
+// Si en MRM ya se subieron documentos con una categoría de la lista anterior, se mantiene para poder filtrarlos.
+foreach(query('SELECT DISTINCT category FROM files')->fetchAll(PDO::FETCH_COLUMN) as $fc) if(is_string($fc) && $fc!=='' && !in_array($fc,$categories,true)) array_splice($categories,-1,0,[$fc]);
 $canEdit = $user && in_array($user['role'],['admin','editor'],true);
 $isAdmin = $user && $user['role']==='admin';
 require __DIR__.'/office.php';
 require __DIR__.'/account.php';
 require __DIR__.'/oc.php';
+require __DIR__.'/intl.php';
 require __DIR__.'/cot.php';
+require __DIR__.'/proforma.php';
 require __DIR__.'/contable.php';
 require __DIR__.'/dash.php';
 require __DIR__.'/presupuesto.php';
+require __DIR__.'/cursos.php';
 if ($cli) return;
 register_shutdown_function('afterResponse');
 // Roles obligados a la verificación en dos pasos: sin activarla solo pueden enrolarse o salir.
@@ -405,8 +414,10 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
             accountPost($action);
             if (str_starts_with($action,'oc_')) ocPost($action);
             if (str_starts_with($action,'cot_')) cotPost($action);
+            if (str_starts_with($action,'pf_') && pfOn()) pfPost($action);
             if (str_starts_with($action,'cc_')) ccPost($action);
             if (str_starts_with($action,'ps_')) psPost($action);
+            if (str_starts_with($action,'cu_') && cuOn()) cuPost($action);
             if ($action==='delete' && $isAdmin) {
                 $f=query('SELECT * FROM files WHERE id=?',[(int)post('id')])->fetch(PDO::FETCH_ASSOC);
                 if ($f) { $dest=dataDir().'/uploads/'.$f['stored']; if(is_file($dest)&&!unlink($dest)) throw new RuntimeException('No se pudo eliminar el archivo.'); query('DELETE FROM files WHERE id=?',[$f['id']]); audit('Eliminación',$f['name']);
@@ -422,8 +433,10 @@ $showPicker = $user && !$mfaForce && (!$empresaSet || isset($_GET['empresas']));
 if (!$showPicker) {
 ocGetRequests();
 cotGetRequests();
+pfGetRequests();
 ccGetRequests();
 psGetRequests();
+cuGetRequests();
 accountGetRequests();
 }
 if (!$showPicker && (isset($_GET['download']) || isset($_GET['raw']))) {
