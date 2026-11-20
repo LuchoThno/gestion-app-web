@@ -17,7 +17,12 @@ if (!is_file(__DIR__.'/config.php')) stop(503, 'Configuración pendiente: copia 
 $config = require __DIR__.'/config.php';
 $cli = PHP_SAPI==='cli' && defined('OX3_CLI'); // cron.php: solo base de datos y tareas, sin sesión ni pantallas
 $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-if (!$cli && $config['https_only'] && !$secure) { header('Location: https://gestion.ox3.cl/', true, 302); exit; }
+if (!$cli && $config['https_only'] && !$secure) {
+    // Redirige a HTTPS en el dominio declarado en app_url (no a uno fijo), para que cada instalación vaya a su propia dirección.
+    $httpsHost = (string)(parse_url((string)($config['app_url'] ?? ''), PHP_URL_HOST) ?? '');
+    if ($httpsHost === '') stop(503, 'Define app_url en private/config.php o usa https_only => false en local.');
+    header('Location: https://'.$httpsHost.'/', true, 302); exit;
+}
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
