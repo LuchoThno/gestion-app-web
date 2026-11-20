@@ -156,7 +156,7 @@ La plataforma es una **app web progresiva (PWA)**: incluye un manifiesto (`publi
 | 🤖 Android (Chrome) | Menú ⋮ → **Instalar aplicación**. |
 | 🍎 iPhone (Safari) | Compartir → **Agregar a inicio**. |
 
-Se abre en su propia ventana, con el ícono de OX3 y sin la barra del navegador. No usa JavaScript ni service worker, por lo que mantiene intacta la CSP estricta, y requiere conexión porque los datos viven en el servidor. Cubre la exclusión de una aplicación móvil nativa (Tabla 2.3) sin desarrollar una aparte.
+Se abre en su propia ventana, con el ícono de OX3 y sin la barra del navegador. No usa JavaScript propio ni service worker, por lo que mantiene intacta la CSP estricta (la única excepción es el script de Cloudflare Turnstile en la pantalla de ingreso, si se activa), y requiere conexión porque los datos viven en el servidor. Cubre la exclusión de una aplicación móvil nativa (Tabla 2.3) sin desarrollar una aparte.
 
 ## Instalación
 
@@ -170,9 +170,11 @@ Se abre en su propia ventana, con el ícono de OX3 y sin la barra del navegador.
 **Desarrollo local**
 
 ```sh
-cp private/config.example.php private/config.php   # https_only => false y una setup_key
+cp private/config.example.php private/config.php
 php -S 127.0.0.1:8080 -t public_html
 ```
+
+En `private/config.php` local usar `https_only => false`, `app_url => 'http://127.0.0.1:8080/'`, una `setup_key` propia y `smtp_host` vacío, para que la copia local no redirija al dominio de producción ni envíe correos reales.
 
 **Estructura**
 
