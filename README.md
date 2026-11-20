@@ -4,9 +4,10 @@
 &nbsp;&nbsp;&nbsp;&nbsp;
 <img src="public_html/assets/logo-mrm.png" alt="Magallanes ROV Marine" height="72">
 
-# Plataforma web multiempresa para la gestión documental, comercial y financiera de pequeñas empresas de servicios
+# OX3 Gestión
 
-**Caso: OX3 Capacitaciones y Magallanes ROV Marine**
+**Plataforma web multiempresa para la gestión documental, comercial y financiera de pequeñas empresas de servicios**
+<br>Caso: OX3 Capacitaciones y Magallanes ROV Marine
 
 Proyecto de título · Ingeniería en Computación e Informática · Universidad Gabriela Mistral
 <br>Luis Elías Vargas Vergara
@@ -17,6 +18,8 @@ Proyecto de título · Ingeniería en Computación e Informática · Universidad
 ![PWA](https://img.shields.io/badge/PWA-instalable-5A0FC8?logo=pwa&logoColor=white)
 ![OWASP](https://img.shields.io/badge/OWASP-Top%2010-000000?logo=owasp&logoColor=white)
 ![Estado](https://img.shields.io/badge/estado-MVP%20en%20producción-0f2a45)
+
+[Problema](#problema) · [Arquitectura](#arquitectura-multiempresa) · [Funcionalidades](#funcionalidades) · [Instalación](#instalación) · [Documentación técnica](TECNICO.md) · [Seguridad](SECURITY.md)
 
 </div>
 
@@ -43,6 +46,7 @@ Plataforma web con la que dos pequeñas empresas de servicios que comparten gere
 - [Instalar como app](#instalar-como-app)
 - [Instalación](#instalación)
 - [Contexto académico](#contexto-académico)
+- [Autor](#autor)
 
 ## Problema
 
@@ -191,4 +195,18 @@ TECNICO.md     Documentación técnica
 | --- | --- |
 | **Metodología** | Design Science Research (Peffers et al., 2007) con sprints de Scrum. |
 | **Evaluación** | Pruebas funcionales y de migración, revisión OWASP Top 10, indicadores de calidad de datos y cuestionario SUS. |
-| **Hitos** | Solemne I · 20-11-2026 → Entrega II, plataforma en producción y este repositorio · 23-12-2026 → Entrega final · 13-01-2027. |
+
+
+**Hitos**
+
+| Hito | Fecha | Entregable |
+| --- | :---: | --- |
+| 📝 Solemne I | 20-11-2026 | Definición del MVP y los incrementos. |
+| 🚀 Entrega II | 23-12-2026 | Plataforma en producción y este repositorio. |
+| 🎓 Entrega final | 13-01-2027 | Entrega final del proyecto de título. |
+
+## Autor
+
+**Luis Elías Vargas Vergara** · Ingeniería en Computación e Informática · Universidad Gabriela Mistral · [@LuchoThno](https://github.com/LuchoThno)
+
+¿Encontraste una vulnerabilidad? No abras un issue público: sigue la [política de seguridad](SECURITY.md).
