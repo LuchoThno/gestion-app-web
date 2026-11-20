@@ -42,6 +42,8 @@ Plataforma web con la que dos pequeñas empresas de servicios que comparten gere
 - [Requerimientos y código](#requerimientos-y-código)
 - [Instalar como app](#instalar-como-app)
 - [Instalación](#instalación)
+- [Demostración](#demostración)
+- [Procesos de prueba](#procesos-de-prueba)
 - [Contexto académico](#contexto-académico)
 
 ## Problema
@@ -176,16 +178,87 @@ php -S 127.0.0.1:8080 -t public_html
 
 En `private/config.php` local usar `https_only => false`, `app_url => 'http://127.0.0.1:8080/'`, una `setup_key` propia y `smtp_host` vacío, para que la copia local no redirija al dominio de producción ni envíe correos reales.
 
+Para ver la plataforma con datos sin instalar nada, usar la [demostración](#demostración).
+
 **Estructura**
 
 ```
 public_html/   Raíz web: index.php, manifiesto PWA, estilos, logos e íconos
 private/       Código de la aplicación, configuración y datos (fuera de la raíz web)
+demo/          Demostración local con datos ficticios
 TECNICO.md     Documentación técnica
 ```
 
 > [!WARNING]
 > Este repositorio es público. `config.php`, `app.key`, las bases `*.sqlite`, `private/empresas/`, `uploads/`, `backups/` y `audit.anchor` están excluidos en `.gitignore`: nunca subir credenciales, claves ni datos reales.
+
+## Demostración
+
+Una copia local con datos **ficticios** de OX3 y MRM para mostrar la plataforma completa en minutos. Requiere PHP 8.1 o superior con las extensiones de la [instalación](#instalación).
+
+```sh
+./demo/levantar.sh             # crea la demo (la primera vez) y la abre en http://127.0.0.1:8080
+./demo/levantar.sh --reiniciar # borra la demo y vuelve a los datos iniciales
+PORT=8090 ./demo/levantar.sh   # usa otro puerto
+```
+
+**Cómo funciona.** `demo/levantar.sh` copia `public_html/` y `private/` a `demo/.run/` (ignorada por git), crea ahí su propio `config.php` local (sin HTTPS forzado, sin correo, sin segundo factor y con claves aleatorias) y ejecuta `demo/seed.php` para cada empresa. No lee ni modifica `private/config.php` ni datos reales. Se detiene con `Ctrl+C`.
+
+**Usuarios de prueba** (contraseña `Demo-Gestion-2026`, válida solo en la demo):
+
+| Usuario | Rol | Qué permite mostrar |
+| --- | --- | --- |
+| `admin@demo.test` | Administrador | Todo: ambas empresas, usuarios, bitácora, seguridad, respaldos y aprobaciones. |
+| `editor@demo.test` | Editor | Registrar y editar documentos, movimientos, rendiciones, OC y cotizaciones. |
+| `lector@demo.test` | Lector | Solo consulta: los botones de crear y editar no aparecen. |
+
+**Datos que trae** (fechas relativas al día en que se crea la demo):
+
+| Módulo | OX3 Capacitaciones | Magallanes ROV Marine |
+| --- | --- | --- |
+| Proyectos y documentos | 3 proyectos; carpetas *Contrato y cotización*, *Registros* e *Informe final*; PDF, CSV y TXT con vista previa | Igual, con plan de inspección, bitácora de inmersión e informe técnico |
+| Centros de costo | C-101, C-102 y ADM | P-201, P-202 y ADM |
+| Cotizaciones | Aceptada, Enviada (con descuento) y Borrador | Igual, con IVA |
+| Órdenes de compra | Emitida, Recibida y Borrador | Igual |
+| Contabilidad | 3 ingresos y 5 gastos repartidos por centro | Igual |
+| Rendiciones | Aprobada, Enviada (pendiente de aprobar) y Borrador | Igual |
+| Presupuestos | Uno **aprobado** con ejecución real y **alerta de sobregiro**, y otro **por aprobar** | Igual, por operación |
+| Cursos | 2 cursos con módulos, costos y evaluación económica | — |
+| Proformas | — | 1 proforma en inglés y USD con anticipo |
+
+## Procesos de prueba
+
+Pruebas manuales sobre la demostración. Cada una indica el rol con que se hace y el resultado esperado; repetirlas tras `./demo/levantar.sh --reiniciar` para partir siempre de los mismos datos.
+
+**Ingreso, empresas y roles**
+
+| # | Rol | Pasos | Resultado esperado |
+| --- | --- | --- | --- |
+| P-01 | Administrador | Ingresar con correo y contraseña. | Aparece el selector con OX3 y MRM. |
+| P-02 | Administrador | Entrar a OX3, luego *Cambiar de empresa* → MRM. | Cambian logo, datos y numeración; los datos de una empresa no se ven en la otra. |
+| P-03 | Cualquiera | Ingresar 5 veces con una contraseña errada. | El ingreso se bloquea temporalmente. |
+| P-04 | Lector | Recorrer Documentos, Cotizaciones, OC y Contabilidad. | Puede consultar, pero no ve los botones de crear, editar ni aprobar. |
+| P-05 | Administrador | *Mi cuenta* → activar verificación en dos pasos con una app TOTP. | Pide el código en el siguiente ingreso y entrega códigos de recuperación. |
+
+**Módulos**
+
+| # | Módulo (RF) | Rol | Pasos | Resultado esperado |
+| --- | --- | --- | --- | --- |
+| P-06 | Documentos (RF-01) | Editor | Abrir el primer proyecto, entrar a una carpeta, ver un PDF y un CSV; subir un archivo. | Vista previa en la plataforma; el archivo queda en la carpeta y en la búsqueda. |
+| P-07 | Cotizaciones (RF-02) | Editor | Abrir la cotización Enviada, imprimirla; crear una nueva. | Hoja imprimible con datos del emisor; la nueva toma el siguiente correlativo. |
+| P-08 | Órdenes de compra (RF-03) | Editor | Crear una OC para el centro C-101 y emitirla. | Correlativo propio de la empresa; aparece como compromiso en el presupuesto. |
+| P-09 | Contabilidad (RF-04, RF-13) | Editor | Registrar un gasto con comprobante repartido 50/50 entre dos centros. | El resumen por centro suma cada mitad. |
+| P-10 | Rendiciones (RF-05) | Editor → Administrador | Enviar la rendición en Borrador; como administrador, aprobar la Enviada o rechazarla con motivo. | Cambia de estado, queda en *Pendientes* y en la bitácora; solo las aprobadas cuentan como gasto. |
+| P-11 | Presupuestos (RF-06) | Administrador | Abrir el presupuesto aprobado; aprobar el que está *Por aprobar*. | Semáforo y porcentaje de ejecución por partida; el sobregiro se marca en rojo. |
+| P-12 | Dashboard y avisos (RF-07) | Administrador | Abrir Dashboard y Pendientes; filtrar por centro y por período. | Ingresos, costos y resultado cambian según el filtro; la campana muestra los pendientes. |
+| P-13 | Usuarios (RF-08, RF-09) | Administrador | Crear un usuario lector solo para MRM e ingresar con él. | Entra directo a MRM sin ver OX3. |
+| P-14 | Bitácora (RF-11) | Administrador | *Actividad* → verificar la bitácora. | La cadena es íntegra e incluye la carga de la demostración. |
+| P-15 | Respaldos (RF-12) | Administrador | *Seguridad* → crear un respaldo y verificarlo. | Se crea un archivo cifrado que se verifica correctamente. |
+| P-16 | Exportación (RF-14) | Editor | Exportar a CSV los listados de OC, cotizaciones y movimientos. | Descarga de un CSV con los registros filtrados. |
+| P-17 | Cursos (RF-15, RF-16) | Editor (OX3) | Abrir un curso, cambiar participantes y ver su evaluación; cotizar desde el curso. | Recalcula costo, margen y veredicto; crea la cotización vinculada. |
+| P-18 | Proformas | Editor (MRM) | Abrir la proforma en USD e imprimirla. | Hoja en inglés con anticipo y datos bancarios. |
+
+**Verificación automática rápida** (con la demo levantada y la sesión iniciada como administrador): cada pestaña de OX3 (20) y de MRM (12) responde 200 sin mensajes de error. Fue la verificación hecha al incorporar la demostración.
 
 ## Contexto académico
 
