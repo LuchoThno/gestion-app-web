@@ -20,3 +20,6 @@ audit.anchor
 
 # Archivos del sistema
 .DS_Store
+
+# Copia local de la demostración (demo/levantar.sh)
+demo/.run/
