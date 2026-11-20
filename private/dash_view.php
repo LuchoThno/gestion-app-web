@@ -63,6 +63,7 @@ $ic2=['cat'=>'chart','list'=>'list','up'=>'activity','center'=>'project','cart'=
   <div class="stat"><?=ic('chart')?><strong><?=$tot['ingreso']>0?clp(round(100*$tot['gasto']/$tot['ingreso'])):'—'?></strong><span>de costo por cada $ 100 de ingreso</span></div>
 </div>
 <p class="hint dash-range"><?=e($rangeLabel)?><?=$prevLabel?' · las flechas comparan '.e($prevLabel):''?>. Gastos de rendiciones: solo aprobadas. Montos con IVA incluido.</p>
+<?=ccNotCountedHtml(ccNotCounted($f['desde'],$f['hasta'],$f['centro']),$durl(['desde'=>'','hasta'=>'']))?>
 
 <?php if($tot['ingreso']===0 && $tot['gasto']===0):?>
 <div class="empty-state dash-empty"><?=ic('chart')?><b>Sin ingresos ni gastos en este período</b><span><?=$canEdit?'Registra movimientos en Contabilidad o elige otro período.':'Elige otro período o espera a que se registren movimientos.'?></span><a class="btn ghost" href="<?=e($durl(['desde'=>'','hasta'=>'']))?>">Ver todo el historial</a></div>

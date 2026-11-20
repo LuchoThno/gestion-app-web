@@ -38,6 +38,7 @@ function ic(string $n): string {
         'mail'=>'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/>',
         'target'=>'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
         'info'=>'<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
+        'globe'=>'<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/>',
         'switch'=>'<path d="M7 4L3 8l4 4"/><path d="M3 8h14"/><path d="M17 20l4-4-4-4"/><path d="M21 16H7"/>',
     ];
     return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'.($p[$n]??'').'</svg>';
@@ -86,7 +87,7 @@ function fileRows(array $files, bool $showLocation=false): void { global $isAdmi
 </tbody></table></div>
 <?php }
 ?><!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=$user&&!$showPicker&&!$mfaForce?e(empresa()['corto']):'OX3'?> | Gestión documental</title><link rel="stylesheet" href="assets/style.css?v=11"><?php if($turnstileLogin): ?><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script><?php endif ?></head>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=$user&&!$showPicker&&!$mfaForce?e(empresa()['corto']):'OX3'?> | Gestión documental</title><link rel="stylesheet" href="assets/style.css?v=17"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0f2a45"><link rel="icon" href="assets/icon-192.png" sizes="192x192"><link rel="apple-touch-icon" href="assets/apple-touch-icon.png"><meta name="apple-mobile-web-app-title" content="OX3 Gestión"><?php if($turnstileLogin): ?><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script><?php endif ?></head>
 <body>
 <?php if(!$user || $mfaForce): $mfaStep=!$user && $installed && !empty($_SESSION['mfa_uid']) && (int)($_SESSION['mfa_until']??0)>=time(); ?>
 <main class="login"><section class="brand-panel"><a class="logo" href="index.php" aria-label="OX3 inicio">OX<span>3</span><small>CAPACITACIONES CHILE</small></a><div class="pitch"><span class="eyebrow">PLATAFORMA DE GESTIÓN</span><h1>Tu documentación.<br>En un solo lugar.</h1><p>Organiza por proyectos y carpetas los archivos<br>que dan respaldo a cada operación de OX3.</p><div class="tags"><span>Marítima</span><span>Portuaria</span><span>Minera</span></div></div><footer>CAPACITACIONES OX3 CHILE SPA <span>gestion.ox3.cl</span></footer></section>
@@ -141,13 +142,17 @@ function fileRows(array $files, bool $showLocation=false): void { global $isAdmi
 $g=fn(string $k): string => is_string($_GET[$k]??null) ? trim($_GET[$k]) : '';
 $search=$g('q'); $category=in_array($g('category'),$categories,true)?$g('category'):'';
 $tab=in_array($g('tab'),APP_TABS,true)?$g('tab'):'';
-if(in_array($tab,['users','activity','oc_cfg','cot_cfg','cc_cfg','security'],true)&&!$isAdmin) $tab='';
+if(in_array($tab,['users','activity','oc_cfg','cot_cfg','pf_cfg','cc_cfg','cu_cfg','security'],true)&&!$isAdmin) $tab='';
 if($tab==='cc_new'&&!$canEdit) $tab='cc_movs';
 if($tab==='cc_rend_new'&&!$canEdit) $tab='cc_rends';
 if($tab==='oc_new'&&!$canEdit) $tab='oc';
 if($tab==='cot_new'&&!$canEdit) $tab='cot';
+if($tab==='pf_new'&&!$canEdit) $tab='pf';
+if(str_starts_with($tab,'pf')&&!pfOn()) $tab='';
 if($tab==='ps_new'&&!$canEdit) $tab='ps';
-$ocId=(int)$g('oc'); $cotId=(int)$g('cot'); $movId=(int)$g('mov'); $rendId=(int)$g('rend'); $psId=(int)$g('pres');
+if(($tab==='cu_new'||$tab==='cu_import')&&!$canEdit) $tab='cu';
+if(str_starts_with($tab,'cu')&&!cuOn()) $tab='';
+$ocId=(int)$g('oc'); $cotId=(int)$g('cot'); $pfId=pfOn()?(int)$g('pf'):0; $movId=(int)$g('mov'); $rendId=(int)$g('rend'); $psId=(int)$g('pres'); $cuId=cuOn()?(int)$g('curso'):0;
 $previewId=(int)$g('preview'); $curF=(int)$g('f'); $curP=isset($_GET['p'])?(int)$g('p'):-1;
 $sort=in_array($g('sort'),['name','size'],true)?$g('sort'):'recent';
 $order=['recent'=>'files.id DESC','name'=>'files.name COLLATE NOCASE','size'=>'files.size DESC'][$sort];
@@ -161,7 +166,7 @@ $curFolder=false; $curProject=false; $trail=[];
 if($preview){ $curF=(int)$preview['folder_id']; $curP=$preview['project_id']===null?0:(int)$preview['project_id']; }
 if($curF>0){ $curFolder=folder($curF); if($curFolder){ $trail=folderTrail($curF); $curP=$curFolder['project_id']===null?0:(int)$curFolder['project_id']; } else $curF=0; }
 if($curP>0){ $curProject=project($curP); if(!$curProject) $curP=-1; }
-$mode=$previewId?'preview':($ocId?'oc_doc':($cotId?'cot_doc':($movId?'cc_mov_doc':($rendId?'cc_rend_doc':($psId?'ps_doc':($tab?:(($search!==''||$category!=='')?'search':(($curP>=0||$curF>0)?'folder':'home'))))))));
+$mode=$previewId?'preview':($ocId?'oc_doc':($cotId?'cot_doc':($pfId?'pf_doc':($movId?'cc_mov_doc':($rendId?'cc_rend_doc':($psId?'ps_doc':($cuId?'cu_doc':($tab?:(($search!==''||$category!=='')?'search':(($curP>=0||$curF>0)?'folder':'home'))))))))));
 $active=fn(bool $c): string => $c?' class="active" aria-current="page"':'';
 $quota=(int)$config['quota_mb']*1048576;
 $pending=pendingItems($user); $unread=(int)query('SELECT COUNT(*) FROM notifications WHERE user_id=? AND read_at IS NULL',[$user['id']])->fetchColumn();
@@ -178,14 +183,16 @@ $nPendWork=count(array_filter($pending,fn($p)=>$p['kind']!=='seguridad'));
     <a href="<?=e(url(['tab'=>'dash']))?>"<?=$active($mode==='dash')?>><?=ic('trend')?>Dashboard</a>
     <a href="<?=e(url(['p'=>0]))?>"<?=$active($mode!=='home'&&$mode!=='search'&&!$tab&&$curP===0)?>><?=ic('inbox')?>General<span class="count"><?=$generalCount?></span></a>
   </nav>
-  <div class="side-title"><span>Proyectos</span><?php if($canEdit):?><details class="pop pop-side"><summary class="mini-btn" title="Nuevo proyecto"><?=ic('plus')?><span class="sr">Nuevo proyecto</span></summary><form method="post" class="pop-body"><?=csrf()?><strong>Nuevo proyecto</strong><label>Nombre<input name="name" maxlength="80" required placeholder="Ej: Curso OMI 2026"></label><label>Descripción <small>(opcional)</small><input name="description" maxlength="300"></label><button class="primary" name="action" value="add_project">Crear proyecto</button></form></details><?php endif?></div>
+  <div class="side-title"><span>Proyectos</span><?php if($canEdit):?><details class="pop pop-side"><summary class="mini-btn" title="Nuevo proyecto"><?=ic('plus')?><span class="sr">Nuevo proyecto</span></summary><form method="post" class="pop-body"><?=csrf()?><strong>Nuevo proyecto</strong><label>Nombre<input name="name" maxlength="80" required placeholder="<?=e(txEmp('Ej: Curso OMI 2026','Ej: Inspección ROV Terminal Mardones'))?>"></label><label>Descripción <small>(opcional)</small><input name="description" maxlength="300"></label><button class="primary" name="action" value="add_project">Crear proyecto</button></form></details><?php endif?></div>
   <nav class="nav projects-nav">
     <?php foreach($projects as $pr):?><a href="<?=e(url(['p'=>(int)$pr['id']]))?>"<?=$active(!$tab&&$mode!=='search'&&$mode!=='home'&&$curP===(int)$pr['id'])?>><span class="dot <?=tone((int)$pr['id'])?>"></span><?=e($pr['name'])?><span class="count"><?=(int)$pr['nfiles']?></span></a><?php endforeach?>
     <?php if(!$projects):?><p class="side-empty">Aún no hay proyectos.</p><?php endif?>
   </nav>
   <div class="side-title"><span>Ventas</span></div>
   <nav class="nav">
+    <?php if(cuOn()):?><a href="<?=e(url(['tab'=>'cu']))?>"<?=$active(str_starts_with($mode,'cu'))?>><?=ic('list')?>Cursos<span class="count"><?=(int)query("SELECT COUNT(*) FROM cu_courses WHERE estado<>'Archivado'")->fetchColumn()?></span></a><?php endif?>
     <a href="<?=e(url(['tab'=>'cot']))?>"<?=$active(str_starts_with($mode,'cot'))?>><?=ic('quote')?>Cotizaciones<span class="count"><?=(int)query('SELECT COUNT(*) FROM cot_quotes')->fetchColumn()?></span></a>
+    <?php if(pfOn()):?><a href="<?=e(url(['tab'=>'pf']))?>"<?=$active(str_starts_with($mode,'pf'))?>><?=ic('receipt')?>Proformas<span class="count"><?=(int)query('SELECT COUNT(*) FROM pf_invoices')->fetchColumn()?></span></a><?php endif?>
   </nav>
   <div class="side-title"><span>Compras</span></div>
   <nav class="nav">
@@ -227,7 +234,7 @@ $nPendWork=count(array_filter($pending,fn($p)=>$p['kind']!=='seguridad'));
 <div class="card-grid">
   <a class="tile" href="<?=e(url(['p'=>0]))?>"><span class="tile-icon tone-gray"><?=ic('inbox')?></span><b>General</b><small>Documentos sin proyecto asignado</small><span class="tile-meta"><?=$generalCount?> documentos</span></a>
   <?php foreach($projects as $pr):?><a class="tile" href="<?=e(url(['p'=>(int)$pr['id']]))?>"><span class="tile-icon <?=tone((int)$pr['id'])?>"><?=ic('project')?></span><b><?=e($pr['name'])?></b><small><?=e($pr['description']?:'Sin descripción')?></small><span class="tile-meta"><?=(int)$pr['nfiles']?> documentos · <?=(int)$pr['nfolders']?> carpetas</span></a><?php endforeach?>
-  <?php if($canEdit):?><details class="tile tile-new"><summary><span class="tile-icon tone-line"><?=ic('plus')?></span><b>Nuevo proyecto</b><small>Agrupa carpetas y documentos de un cliente, curso u operación.</small></summary><form method="post" class="stack"><?=csrf()?><label>Nombre<input name="name" maxlength="80" required></label><label>Descripción <small>(opcional)</small><input name="description" maxlength="300"></label><button class="primary" name="action" value="add_project">Crear proyecto</button></form></details><?php endif?>
+  <?php if($canEdit):?><details class="tile tile-new"><summary><span class="tile-icon tone-line"><?=ic('plus')?></span><b>Nuevo proyecto</b><small>Agrupa carpetas y documentos de un cliente, <?=txEmp('curso','inspección')?> u operación.</small></summary><form method="post" class="stack"><?=csrf()?><label>Nombre<input name="name" maxlength="80" required></label><label>Descripción <small>(opcional)</small><input name="description" maxlength="300"></label><button class="primary" name="action" value="add_project">Crear proyecto</button></form></details><?php endif?>
 </div></section>
 <section class="block"><div class="block-head"><h2>Subidos recientemente</h2></div>
 <?php if($recent): fileRows($recent,true); else:?><div class="empty-state"><?=ic('upload')?><b>Todavía no hay documentos</b><span>Entra a un proyecto o a General para subir el primero.</span></div><?php endif?>
@@ -250,7 +257,7 @@ $here=$fid?['f'=>$fid]:['p'=>$pid??0];
   <div class="title-row"><span class="tile-icon big <?=$curFolder?'tone-folder':($curProject?tone((int)$curProject['id']):'tone-gray')?>"><?=ic($curFolder?'folder':($curProject?'project':'inbox'))?></span><div><h1><?=e($title)?></h1><p class="subtitle"><?php if($curFolder):?>Carpeta<?=$curProject?' de '.e($curProject['name']):' en General'?><?php elseif($curProject):?><?=e($curProject['description']?:'Proyecto')?><?php else:?>Documentos y carpetas sin proyecto asignado.<?php endif?></p></div></div>
   <div class="head-actions">
   <?php if($canEdit):?>
-    <details class="pop"><summary class="btn ghost"><?=ic('folder')?>Nueva carpeta</summary><form method="post" class="pop-body"><?=csrf()?><input type="hidden" name="p" value="<?=(int)$pid?>"><input type="hidden" name="f" value="<?=(int)$fid?>"><strong>Nueva carpeta en “<?=e($title)?>”</strong><label>Nombre<input name="name" maxlength="80" required placeholder="Ej: Certificados alumnos"></label><button class="primary" name="action" value="add_folder">Crear carpeta</button></form></details>
+    <details class="pop"><summary class="btn ghost"><?=ic('folder')?>Nueva carpeta</summary><form method="post" class="pop-body"><?=csrf()?><input type="hidden" name="p" value="<?=(int)$pid?>"><input type="hidden" name="f" value="<?=(int)$fid?>"><strong>Nueva carpeta en “<?=e($title)?>”</strong><label>Nombre<input name="name" maxlength="80" required placeholder="<?=e(txEmp('Ej: Certificados alumnos','Ej: Videos de inspección'))?>"></label><button class="primary" name="action" value="add_folder">Crear carpeta</button></form></details>
     <?php if($curFolder||$curProject):?><details class="pop"><summary class="btn ghost" title="Más opciones"><?=ic('more')?><span class="sr">Más opciones</span></summary><div class="pop-body">
       <?php if($curFolder):?><form method="post" class="stack"><?=csrf()?><input type="hidden" name="id" value="<?=(int)$curFolder['id']?>"><strong>Renombrar carpeta</strong><label>Nombre<input name="name" maxlength="80" required value="<?=e($curFolder['name'])?>"></label><button class="primary" name="action" value="rename_folder">Guardar</button></form>
       <?php else:?><form method="post" class="stack"><?=csrf()?><input type="hidden" name="id" value="<?=(int)$curProject['id']?>"><strong>Editar proyecto</strong><label>Nombre<input name="name" maxlength="80" required value="<?=e($curProject['name'])?>"></label><label>Descripción<input name="description" maxlength="300" value="<?=e($curProject['description'])?>"></label><button class="primary" name="action" value="edit_project">Guardar</button></form><?php endif?>
@@ -339,10 +346,13 @@ $back=$curF>0?url(['f'=>$curF]):url(['p'=>max($curP,0)]);
 <?php elseif(str_starts_with($mode,'oc')): require __DIR__.'/oc_view.php';?>
 
 <?php elseif(str_starts_with($mode,'cot')): require __DIR__.'/cot_view.php';?>
+<?php elseif(str_starts_with($mode,'pf')): require __DIR__.'/proforma_view.php';?>
 
 <?php elseif(str_starts_with($mode,'cc')): require __DIR__.'/contable_view.php';?>
 
 <?php elseif(str_starts_with($mode,'ps')): require __DIR__.'/presupuesto_view.php';?>
+
+<?php elseif(str_starts_with($mode,'cu')): require __DIR__.'/cursos_view.php';?>
 
 <?php elseif(in_array($mode,['account','pend','security'],true)): require __DIR__.'/account_view.php';?>
 
