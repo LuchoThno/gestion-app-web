@@ -18,7 +18,7 @@ $ccMovForm=function(array $m, int $id, int $rendId, array $rows) use($ccCfg, $ce
 <section class="card"><h2><?=$tipo==='ingreso'?'Datos del ingreso':'Datos del gasto'?></h2><div class="oc-grid">
   <label>Fecha del documento<input type="date" name="fecha" required value="<?=e($m['fecha'])?>"></label>
   <label>Monto total (CLP, IVA incluido)<input type="number" name="monto" min="1" step="1" required value="<?=e($n($m['monto']))?>" placeholder="Ej: 45000"></label>
-  <label class="span2">Descripción<input name="descripcion" maxlength="200" required value="<?=e($m['descripcion'])?>" placeholder="<?=$tipo==='ingreso'?'Ej: Pago curso OMI, 12 alumnos':'Ej: Almuerzo equipo relatores'?>"></label>
+  <label class="span2">Descripción<input name="descripcion" maxlength="200" required value="<?=e($m['descripcion'])?>" placeholder="<?=e($tipo==='ingreso'?txEmp('Ej: Pago curso OMI, 12 alumnos','Ej: Pago inspección ROV de casco, nave Skua'):txEmp('Ej: Almuerzo equipo relatores','Ej: Combustible embarcación de apoyo'))?>"></label>
   <label><?=$tipo==='ingreso'?'Cliente':'Proveedor'?> <small>(opcional)</small><input name="contraparte" maxlength="160" value="<?=e($m['contraparte'])?>"></label>
   <label>R.U.T. <small>(opcional)</small><input name="rut" maxlength="20" value="<?=e($m['rut'])?>" placeholder="Ej: 76.123.456-7"></label>
   <label>Tipo de documento<select name="doc_tipo"><option value="">— Elegir —</option><?php foreach(CC_DOCS as $d):?><option<?=$m['doc_tipo']===$d?' selected':''?>><?=e($d)?></option><?php endforeach?></select></label>
@@ -27,7 +27,7 @@ $ccMovForm=function(array $m, int $id, int $rendId, array $rows) use($ccCfg, $ce
   <label>Medio de pago<select name="medio"><option value="">— Elegir —</option><?php foreach(CC_MEDIOS as $d):?><option<?=$m['medio']===$d?' selected':''?>><?=e($d)?></option><?php endforeach?></select></label>
   <label>IVA incluido <small>(opcional, en pesos)</small><input type="number" name="iva" min="0" step="1" value="<?=e($n($m['iva']))?>"></label>
   <label>Referencia <small>(OC, cotización u otra)</small><input name="referencia" maxlength="60" list="cc-refs" value="<?=e($m['referencia'])?>"></label>
-</div><?php if($tipo==='gasto'):?><p class="hint"><b>Boleta de honorarios:</b> registra el <b>monto bruto</b> de la boleta (líquido pagado al relator + retención del <?=e(str_replace('.',',',(string)(float)$ccCfg['ret_honorarios']))?> % que OX3 paga al SII en el F29). Así el gasto real se compara bien con el presupuesto.</p><?php endif?><datalist id="cc-refs"><?php foreach($refs as $r):?><option value="<?=e($r)?>"><?php endforeach?></datalist></section>
+</div><?php if($tipo==='gasto'):?><p class="hint"><b>Boleta de honorarios:</b> registra el <b>monto bruto</b> de la boleta (líquido pagado al <?=txEmp('relator','prestador')?> + retención del <?=e(str_replace('.',',',(string)(float)$ccCfg['ret_honorarios']))?> % que <?=e(empresa()['corto'])?> paga al SII en el F29). Así el gasto real se compara bien con el presupuesto.</p><?php endif?><datalist id="cc-refs"><?php foreach($refs as $r):?><option value="<?=e($r)?>"><?php endforeach?></datalist></section>
 
 <section class="card"><h2>Centros de costo</h2>
 <?php if(!$centers):?><p class="hint">Aún no hay centros de costo. <?=$GLOBALS['isAdmin']?'Créalos en <a href="'.e(url(['tab'=>'cc_cfg'])).'">Configuración contable</a>.':'Pide al administrador que los cree.'?> Mientras tanto, el movimiento queda «Sin centro de costo».</p>
@@ -87,6 +87,7 @@ $ccHead('Resumen contable','Ingresos y gastos por centro de costo. Los gastos de
   <div class="stat"><?=ic('activity')?><strong class="<?=$res<0?'cc-out':''?>"><?=ccClp($res)?></strong><span>Resultado<?=$tot['ingreso']>0?' · margen '.round(100*$res/$tot['ingreso']).'%':''?></span></div>
   <a class="stat" href="<?=e(url(['tab'=>'cc_rends','estado'=>'Enviada']))?>"><?=ic('clock')?><strong><?=(int)$pend['n']?></strong><span>Rendiciones por aprobar · <?=clp((int)$pend['v'])?></span></a>
 </div>
+<?=ccNotCountedHtml(ccNotCounted($f['desde'],$f['hasta'],$f['centro']),url(['tab'=>'cc','desde'=>'','hasta'=>'']+$keep))?>
 <section class="block"><div class="block-head"><h2>Por centro de costo</h2></div>
 <?php if($byC):?><div class="table-wrap"><table class="cc-table"><thead><tr><th>Centro de costo</th><th class="right">Ingresos</th><th class="right">Gastos</th><th class="right">Resultado</th><th class="right hide-sm">Margen</th></tr></thead><tbody>
 <?php $sum=['ingreso'=>0,'gasto'=>0]; $order=array_keys($centers); if(isset($byC[0])) $order[]=0;
@@ -228,7 +229,7 @@ $r=$ccPosted ? ['titulo'=>post('titulo'),'fecha'=>post('fecha'),'responsable'=>p
 <nav class="crumbs" aria-label="Ruta"><a href="<?=e(url(['tab'=>'cc_rends']))?>">Rendiciones</a><?=ic('chevron')?><span>Nueva rendición</span></nav>
 <?php $ccHead('Nueva rendición','Primero indica el motivo y el fondo recibido; luego agregarás cada gasto con su comprobante. Número asignado al guardar: '.e(ccNextRendNumero()).'.');?>
 <form method="post" class="oc-form"><?=csrf()?><section class="card"><h2>Rendición</h2><div class="oc-grid">
-  <label class="span2">Motivo<input name="titulo" maxlength="120" required value="<?=e($r['titulo'])?>" placeholder="Ej: Curso OMI Puerto Natales, octubre"></label>
+  <label class="span2">Motivo<input name="titulo" maxlength="120" required value="<?=e($r['titulo'])?>" placeholder="<?=e(txEmp('Ej: Curso OMI Puerto Natales, octubre','Ej: Inspección ROV Puerto Natales, octubre'))?>"></label>
   <label>Responsable (quien rinde)<input name="responsable" maxlength="100" required value="<?=e($r['responsable'])?>"></label>
   <label>Fecha<input type="date" name="fecha" required value="<?=e($r['fecha'])?>"></label>
   <label>Fondo recibido / anticipo <small>(0 si pagó con su dinero)</small><input type="number" name="fondo" min="0" step="1" value="<?=e((string)$r['fondo'])?>" placeholder="0"></label>
@@ -299,7 +300,7 @@ $missing=(int)query('SELECT COUNT(*) FROM projects WHERE name NOT IN (SELECT nom
 ?>
 <nav class="crumbs" aria-label="Ruta"><a href="<?=e(url(['tab'=>'cc']))?>">Contabilidad</a><?=ic('chevron')?><span>Configuración</span></nav>
 <?php $ccHead('Configuración contable','Centros de costo y categorías de ingresos y gastos.');?>
-<section class="card"><h2>Nuevo centro de costo</h2><form method="post" class="row-form"><?=csrf()?><label>Código <small>(opcional)</small><input name="codigo" maxlength="20" placeholder="Ej: CC-01"></label><label>Nombre<input name="nombre" maxlength="80" required placeholder="Ej: Curso OMI 2026"></label><label>Descripción <small>(opcional)</small><input name="descripcion" maxlength="200"></label><button class="primary" name="action" value="cc_center_save">Crear</button></form>
+<section class="card"><h2>Nuevo centro de costo</h2><form method="post" class="row-form"><?=csrf()?><label>Código <small>(opcional)</small><input name="codigo" maxlength="20" placeholder="Ej: CC-01"></label><label>Nombre<input name="nombre" maxlength="80" required placeholder="<?=e(txEmp('Ej: Curso OMI 2026','Ej: Inspección ROV Terminal Mardones'))?>"></label><label>Descripción <small>(opcional)</small><input name="descripcion" maxlength="200"></label><button class="primary" name="action" value="cc_center_save">Crear</button></form>
 <?php if($missing):?><form method="post" class="cc-import"><?=csrf()?><p class="hint"><?=$missing?> proyecto<?=$missing===1?'':'s'?> de la gestión documental aún no tiene<?=$missing===1?'':'n'?> centro de costo.</p><button class="ghost small" name="action" value="cc_center_import"><?=ic('project')?>Crear centros desde los proyectos</button></form><?php endif?></section>
 <section class="card"><h2>Centros de costo <small class="muted"><?=count($centers)?></small></h2>
 <?php if($centers):?><div class="table-wrap"><table><thead><tr><th>Centro</th><th class="hide-sm">Uso</th><th>Estado</th><th class="right">Acciones</th></tr></thead><tbody>
@@ -314,6 +315,6 @@ $missing=(int)query('SELECT COUNT(*) FROM projects WHERE name NOT IN (SELECT nom
 </div><p class="hint">Cambiar o quitar una categoría no modifica los movimientos ya registrados.</p></section>
 <section class="card"><h2>Retención de honorarios</h2><div class="oc-grid">
   <label>Retención de boletas de honorarios (%)<input type="number" name="ret_honorarios" min="0" max="49.99" step="0.01" value="<?=e((string)(float)$ccCfg['ret_honorarios'])?>"></label>
-</div><p class="hint">Se usa en los presupuestos cuando el honorario de un relator se ingresa en líquido: el monto presupuestado pasa a ser el bruto (líquido + retención). En 2026 es 15,25 %; súbelo cada enero según el calendario de la Ley 21.133 (16 % en 2027 y 17 % desde 2028). Los presupuestos ya guardados conservan la tasa con que se calcularon.</p></section>
+</div><p class="hint">Se usa en los presupuestos cuando el honorario de un <?=txEmp('relator','prestador')?> se ingresa en líquido: el monto presupuestado pasa a ser el bruto (líquido + retención). En 2026 es 15,25 %; súbelo cada enero según el calendario de la Ley 21.133 (16 % en 2027 y 17 % desde 2028). Los presupuestos ya guardados conservan la tasa con que se calcularon.</p></section>
 <div class="oc-actions"><button class="primary" name="action" value="cc_cfg">Guardar configuración</button></div></form>
 <?php endif?>

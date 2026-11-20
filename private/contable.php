@@ -20,14 +20,30 @@ const CC_MEDIOS=['Transferencia','Efectivo','Tarjeta de débito','Tarjeta de cr�
 /** Condición SQL (alias m = cc_movs, r = cc_rendiciones): los gastos de una rendición solo cuentan cuando está aprobada. */
 const CC_COUNTED="(m.rendicion_id IS NULL OR r.estado='Aprobada')";
 
+/** Categorías de ingreso de una empresa de inspecciones y trabajos con ROV (MRM). */
+const CC_ING_ROV=['Inspecciones ROV','Trabajos submarinos','Servicios','Arriendo de equipos','Aportes','Otros ingresos'];
 function ccDefaults(): array {
     return [
         'cat_gasto'=>['Alimentación','Alojamiento','Arriendo','Combustible','Honorarios','Materiales e insumos','Peajes y estacionamiento','Remuneraciones','Servicios básicos','Servicios externos','Transporte y pasajes','Impuestos y patentes','Otros gastos'],
-        'cat_ingreso'=>['Venta de cursos','Servicios','Arriendo de equipos','Aportes','Otros ingresos'],
+        'cat_ingreso'=>empresa()['cursos'] ? ['Venta de cursos','Servicios','Arriendo de equipos','Aportes','Otros ingresos'] : CC_ING_ROV,
         'ret_honorarios'=>15.25, // % de retención de boletas de honorarios (2026: 15,25 %; sube cada año según la Ley 21.133)
     ];
 }
 if (query('SELECT COUNT(*) FROM cc_settings')->fetchColumn()==0) query('INSERT OR IGNORE INTO cc_settings(key,value) VALUES(?,?)',['cfg',json_encode(ccDefaults(),JSON_UNESCAPED_UNICODE)]);
+// MRM no dicta cursos: si su configuración aún tiene «Venta de cursos» sin usar, se reemplaza por las categorías de ROV (migración única).
+if (!empresa()['cursos']) {
+    $ccIng=json_decode((string)query('SELECT value FROM cc_settings WHERE key=?',['cfg'])->fetchColumn(),true);
+    if (is_array($ccIng) && in_array('Venta de cursos',$ccIng['cat_ingreso']??[],true)
+        && !query("SELECT 1 FROM main.cc_movs WHERE categoria='Venta de cursos' LIMIT 1")->fetchColumn()
+        && !(query("SELECT 1 FROM main.sqlite_master WHERE type='table' AND name='ps_lines'")->fetchColumn() && query("SELECT 1 FROM main.ps_lines WHERE categoria='Venta de cursos' LIMIT 1")->fetchColumn())) {
+        $ccIng['cat_ingreso']=array_values(array_unique([...array_slice(CC_ING_ROV,0,2),...array_diff($ccIng['cat_ingreso'],['Venta de cursos'])]));
+        query('UPDATE cc_settings SET value=? WHERE key=?',[json_encode($ccIng,JSON_UNESCAPED_UNICODE),'cfg']);
+    }
+}
+// Reparación: un movimiento sin distribución por centro de costo no aparecería en el Resumen ni en el Dashboard
+// (ambos suman cc_splits). Se le asigna su monto completo a «Sin centro de costo».
+if (query('SELECT 1 FROM cc_movs m WHERE NOT EXISTS(SELECT 1 FROM cc_splits s WHERE s.mov_id=m.id) LIMIT 1')->fetchColumn())
+    query('INSERT INTO cc_splits(mov_id,center_id,monto,pct) SELECT m.id, NULL, m.monto, 100 FROM cc_movs m WHERE NOT EXISTS(SELECT 1 FROM cc_splits s WHERE s.mov_id=m.id)');
 function ccCfg(): array {
     $c=json_decode((string)query('SELECT value FROM cc_settings WHERE key=?',['cfg'])->fetchColumn(),true);
     return is_array($c) ? $c+ccDefaults() : ccDefaults();
@@ -326,6 +342,32 @@ function ccFiltersFromGet(): array {
 }
 function ccFilterQuery(array $f): array { return array_filter($f,fn($v)=>$v!==''&&$v!==0); }
 
+/**
+ * Lo que el Resumen y el Dashboard no suman con los filtros dados, para explicarlo en pantalla:
+ * gastos de rendiciones aún no aprobadas (en el período) y movimientos con fecha fuera del período.
+ */
+function ccNotCounted(string $desde, string $hasta, int $centro): array {
+    $wc=[]; $pc=[];
+    if($centro>0){ $wc[]='s.center_id=?'; $pc[]=$centro; } elseif($centro===-1) $wc[]='s.center_id IS NULL';
+    $base=' FROM cc_splits s JOIN cc_movs m ON m.id=s.mov_id LEFT JOIN cc_rendiciones r ON r.id=m.rendicion_id WHERE ';
+    $wr=["m.rendicion_id IS NOT NULL AND COALESCE(r.estado,'')<>'Aprobada'",...$wc]; $pr=$pc;
+    if($desde!==''){ $wr[]='m.fecha>=?'; $pr[]=$desde; } if($hasta!==''){ $wr[]='m.fecha<=?'; $pr[]=$hasta; }
+    $rend=query('SELECT COUNT(DISTINCT m.id), COALESCE(SUM(s.monto),0), COUNT(DISTINCT m.rendicion_id)'.$base.implode(' AND ',$wr),$pr)->fetch(PDO::FETCH_NUM);
+    $out=['rend'=>['n'=>(int)$rend[0],'v'=>(int)$rend[1],'r'=>(int)$rend[2]],'fuera'=>['n'=>0,'min'=>'','max'=>'']];
+    $or=[]; $po=[]; if($desde!==''){ $or[]='m.fecha<?'; $po[]=$desde; } if($hasta!==''){ $or[]='m.fecha>?'; $po[]=$hasta; }
+    if($or){
+        $x=query('SELECT COUNT(DISTINCT m.id), MIN(m.fecha), MAX(m.fecha)'.$base.implode(' AND ',[CC_COUNTED,...$wc,'('.implode(' OR ',$or).')']),[...$pc,...$po])->fetch(PDO::FETCH_NUM);
+        $out['fuera']=['n'=>(int)$x[0],'min'=>(string)$x[1],'max'=>(string)$x[2]];
+    }
+    return $out;
+}
+/** Aviso con lo que no se está sumando ('' si todo cuenta). $all: enlace al período «Todo». */
+function ccNotCountedHtml(array $nc, string $all): string {
+    $li=[];
+    if($nc['rend']['n']>0) $li[]='<b>'.$nc['rend']['n'].($nc['rend']['n']===1?' gasto':' gastos').' ('.clp($nc['rend']['v']).')</b> '.($nc['rend']['n']===1?'está':'están').' en '.($nc['rend']['r']===1?'una rendición':$nc['rend']['r'].' rendiciones').' sin aprobar (borrador, enviada o rechazada). Se suman cuando el administrador la'.($nc['rend']['r']===1?'':'s').' aprueba. <a href="'.e(url(['tab'=>'cc_rends'])).'">Ver rendiciones</a>';
+    if($nc['fuera']['n']>0) $li[]='<b>'.$nc['fuera']['n'].($nc['fuera']['n']===1?' movimiento tiene':' movimientos tienen').' fecha fuera de este período</b> ('.($nc['fuera']['min']===$nc['fuera']['max']?'el '.e(ocDate($nc['fuera']['min'])):'entre el '.e(ocDate($nc['fuera']['min'])).' y el '.e(ocDate($nc['fuera']['max']))).'). <a href="'.e($all).'">Ver todo el historial</a>';
+    return $li ? '<div class="alert cu-warn cc-nc" role="status"><b>No incluido en estas cifras:</b><ul><li>'.implode('</li><li>',$li).'</li></ul></div>' : '';
+}
 /** Hoja carta de la rendición, con el mismo diseño que la OC y la cotización. */
 function ccRendSheet(array $r): void {
     $em=ocCfg()['emisor']; $t=ccRendTotals($r); $centers=ccCenters();
@@ -392,7 +434,7 @@ function ccGetRequests(): void {
     if(isset($_GET['cc_rend_print'])) {
         $r=ccRend((int)$_GET['cc_rend_print']); if(!$r) stop(404,'Rendición no encontrada.');
         audit('Impresión de rendición',$r['numero']); ?><!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e($r['numero'])?> · Rendición <?=e(empresa()['corto'])?></title><link rel="stylesheet" href="assets/style.css?v=11"></head>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e($r['numero'])?> · Rendición <?=e(empresa()['corto'])?></title><link rel="stylesheet" href="assets/style.css?v=17"></head>
 <body class="print-page"><div class="print-bar no-print"><a class="btn ghost small" href="<?=e('index.php?rend='.$r['id'])?>">← Volver</a><span>Para imprimir o guardar como PDF usa <b>Ctrl + P</b> (<b>Cmd + P</b> en Mac), tamaño Carta y márgenes «Ninguno».</span></div>
 <div class="sheet-wrap"><?php ccRendSheet($r)?></div></body></html><?php exit;
     }

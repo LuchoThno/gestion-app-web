@@ -13,9 +13,19 @@ $psMovsUrl=fn(array $b, array $q=[]): string => url(array_filter(['tab'=>'cc_mov
 /** Ayuda plegable: las explicaciones largas quedan a un clic y no compiten con los datos. */
 $psHelp=fn(string $html, string $t='¿Cómo se calcula?'): string => '<details class="ps-help"><summary>'.ic('info').$t.'</summary><div>'.$html.'</div></details>';
 
-/** Plantilla de partidas típicas de un curso (solo las categorías que existen en la configuración contable). */
+/** Plantilla de partidas típicas de un curso (OX3) o de una operación con ROV (MRM); solo las categorías que existen en la configuración contable. */
 $psTemplate=function() use($ccCfg): array {
-    $t=[['ingreso','Venta de cursos','Valor por participante','1','alumno','part'],
+    $t=!empresa()['cursos'] ? [['ingreso','Inspecciones ROV','Día de operación ROV','1','día','fijo'],
+        ['ingreso','Inspecciones ROV','Movilización y desmovilización','1','global','fijo'],
+        ['gasto','Remuneraciones','Piloto(s) y técnico ROV','1','día','fijo'],
+        ['gasto','Honorarios','Supervisor o buzo externo, valor líquido','1','día','fijo','liq'],
+        ['gasto','Arriendo','Embarcación de apoyo','1','día','fijo'],
+        ['gasto','Combustible','Embarcación y generador','1','día','fijo'],
+        ['gasto','Transporte y pasajes','Traslado de equipo y personal','1','viaje','fijo'],
+        ['gasto','Alojamiento','Alojamiento del equipo','1','noche','fijo'],
+        ['gasto','Alimentación','Alimentación del equipo','1','día','fijo'],
+        ['gasto','Materiales e insumos','Consumibles y repuestos del ROV','1','','fijo'],
+        ['gasto','Otros gastos','Imprevistos','1','','fijo']] : [['ingreso','Venta de cursos','Valor por participante','1','alumno','part'],
         ['gasto','Honorarios','Relator(es), valor hora líquido','1','hora','hora','liq'],
         ['gasto','Arriendo','Sala, taller o espacio de práctica','1','día','fijo'],
         ['gasto','Materiales e insumos','Manual y materiales del participante','1','kit','part'],
@@ -41,15 +51,15 @@ $psForm=function(array $h, array $rows, int $id) use($centers, $ccCfg, $psProjec
     $extra=max(3,8-count($rows)); for($i=0;$i<$extra;$i++) $rows[]=['tipo'=>'','categoria'=>'','descripcion'=>'','cantidad'=>'','unidad'=>'','precio'=>'','base'=>'fijo','ret'=>0];
     $num=fn($v)=>($v===''||$v===null||(float)$v==0.0)?'':ocNumIn(is_numeric($v)?(float)$v:$v); ?>
 <form method="post" class="oc-form"><?=csrf()?><input type="hidden" name="id" value="<?=$id?>"><input type="hidden" name="action" value="ps_save">
-<section class="card"><h2><span class="ps-step">1</span>Curso o proyecto</h2><div class="oc-grid">
-  <label class="span2">Nombre del presupuesto<input name="nombre" maxlength="120" required value="<?=e($h['nombre'])?>" placeholder="Ej: Curso Operador de Grúa Horquilla, Punta Arenas, noviembre 2026"></label>
-  <label>Tipo<select name="tipo"><?php foreach(PS_TIPOS as $t):?><option<?=$h['tipo']===$t?' selected':''?>><?=e($t)?></option><?php endforeach?></select></label>
-  <label>Código <small>(SENCE, interno u otro; opcional)</small><input name="codigo" maxlength="40" value="<?=e($h['codigo'])?>"></label>
-  <label class="span2">Cliente o mandante <small>(opcional)</small><input name="cliente" maxlength="160" value="<?=e($h['cliente'])?>" placeholder="Ej: empresa, OTIC o SENCE"></label>
+<section class="card"><h2><span class="ps-step">1</span><?=txEmp('Curso o proyecto','Operación o proyecto')?></h2><div class="oc-grid">
+  <label class="span2">Nombre del presupuesto<input name="nombre" maxlength="120" required value="<?=e($h['nombre'])?>" placeholder="<?=e(txEmp('Ej: Curso Operador de Grúa Horquilla, Punta Arenas, noviembre 2026','Ej: Inspección ROV de fondeos, Terminal Mardones, noviembre 2026'))?>"></label>
+  <label>Tipo<select name="tipo"><?php foreach(array_unique([...psTipos(),$h['tipo']]) as $t):?><option<?=$h['tipo']===$t?' selected':''?>><?=e($t)?></option><?php endforeach?></select></label>
+  <label>Código <small>(<?=txEmp('SENCE, interno u otro','interno, del cliente u otro')?>; opcional)</small><input name="codigo" maxlength="40" value="<?=e($h['codigo'])?>"></label>
+  <label class="span2">Cliente o mandante <small>(opcional)</small><input name="cliente" maxlength="160" value="<?=e($h['cliente'])?>" placeholder="<?=e(txEmp('Ej: empresa, OTIC o SENCE','Ej: naviera, terminal o empresa portuaria'))?>"></label>
   <label>Inicio<input type="date" name="desde" value="<?=e($h['desde'])?>"></label>
   <label>Término<input type="date" name="hasta" value="<?=e($h['hasta'])?>"></label>
-  <label>Participantes previstos<input type="number" name="participantes" min="0" step="1" value="<?=e($num($h['participantes']))?>" placeholder="Ej: 15"></label>
-  <label>Horas del curso o proyecto<input type="number" name="horas" min="0" step="0.5" value="<?=e($num($h['horas']))?>" placeholder="Ej: 24"></label>
+  <label><?=txEmp('Participantes previstos','Personas en terreno <small>(opcional)</small>')?><input type="number" name="participantes" min="0" step="1" value="<?=e($num($h['participantes']))?>" placeholder="Ej: 15"></label>
+  <label><?=txEmp('Horas del curso o proyecto','Horas de operación <small>(opcional)</small>')?><input type="number" name="horas" min="0" step="0.5" value="<?=e($num($h['horas']))?>" placeholder="Ej: 24"></label>
   <label class="span2">Observaciones <small>(opcional)</small><textarea name="obs" maxlength="1000" rows="2"><?=e($h['obs'])?></textarea></label>
 </div></section>
 
@@ -57,7 +67,7 @@ $psForm=function(array $h, array $rows, int $id) use($centers, $ccCfg, $psProjec
   <label>Proyecto <small>(de la gestión documental)</small><select name="project_id"><option value="0">— Sin proyecto —</option><?php foreach($psProjects as $pid=>$pn):?><option value="<?=$pid?>"<?=(int)$h['project_id']===(int)$pid?' selected':''?>><?=e($pn)?></option><?php endforeach?></select></label>
   <label>Centro de costo<select name="center_id"><option value="auto"<?=$h['center_id']==='auto'?' selected':''?>>Usar el del proyecto o crear uno con su nombre</option><option value=""<?=$h['center_id']===''?' selected':''?>>— Sin centro (no se controla la ejecución) —</option><?php foreach($centers as $cid=>$c): if(!$c['activo'] && (string)$cid!==(string)$h['center_id']) continue;?><option value="<?=$cid?>"<?=(string)$cid===(string)$h['center_id']?' selected':''?>><?=e(ccCenterLabel($c))?></option><?php endforeach?></select></label>
   <label>Avisar al llegar al <small>(% del gasto presupuestado)</small><input type="number" name="alerta" min="50" max="100" step="1" value="<?=e((string)$h['alerta'])?>"></label>
-</div><?=$psHelp('<p>La ejecución se mide con los ingresos y gastos registrados en Contabilidad con este <b>centro de costo</b> y fecha dentro del período (sin fechas, se considera todo).</p><p>Usa un centro propio para cada curso o proyecto: así cada gasto queda trazado a su presupuesto.</p>','¿Para qué sirve el centro de costo?')?></section>
+</div><?=$psHelp('<p>La ejecución se mide con los ingresos y gastos registrados en Contabilidad con este <b>centro de costo</b> y fecha dentro del período (sin fechas, se considera todo).</p><p>Usa un centro propio para cada '.txEmp('curso','operación').' o proyecto: así cada gasto queda trazado a su presupuesto.</p>','¿Para qué sirve el centro de costo?')?></section>
 
 <section class="card"><h2><span class="ps-step">3</span>Partidas</h2>
 <div class="ps-lines"><div class="ps-line ps-line-head"><span>Partida (categoría)</span><span>Descripción</span><span>Cant.</span><span>Unidad</span><span>Precio unit. ($)</span><span>El precio es</span><span>Se multiplica por</span></div>
@@ -68,10 +78,10 @@ $psForm=function(array $h, array $rows, int $id) use($centers, $ccCfg, $psProjec
   <label><span class="sr">Unidad</span><input name="ln_unidad[]" maxlength="30" value="<?=e($r['unidad'])?>" placeholder="Unidad"></label>
   <label><span class="sr">Precio unitario</span><input type="number" name="ln_precio[]" min="0" step="1" value="<?=e($num($r['precio']))?>" placeholder="$"></label>
   <label><span class="sr">El precio es</span><select name="ln_ret[]"><option value="">Bruto o neto</option><option value="liq"<?=($r['ret']??0)>0?' selected':''?>>Líquido + ret.</option></select></label>
-  <label><span class="sr">Se multiplica por</span><select name="ln_base[]"><?php foreach(PS_BASES as $k=>$lbl):?><option value="<?=$k?>"<?=$r['base']===$k?' selected':''?>><?=e($lbl)?></option><?php endforeach?></select></label>
+  <label><span class="sr">Se multiplica por</span><select name="ln_base[]"><?php foreach(psBases() as $k=>$lbl):?><option value="<?=$k?>"<?=$r['base']===$k?' selected':''?>><?=e($lbl)?></option><?php endforeach?></select></label>
 </div><?php endforeach?></div>
-<p class="hint">Monto = cantidad × precio unitario, multiplicado por participantes u horas según la última columna. Las filas sin precio no se guardan. En honorarios con boleta, elige <b>Líquido + ret.</b> si el valor acordado con el relator es líquido: el monto suma la retención del <?=e(psRetLabel(psRetRate()))?>.</p>
-<?=$psHelp('<p><b>Monto = cantidad × precio</b>, multiplicado por los participantes, las horas o ambos según la última columna. Ejemplo: relator 1 × $ 35.000 × 24 horas; coffee 2 × $ 3.500 × 15 participantes; valor SENCE por hora participante: 1 × $ 6.000 × participantes × horas. Las filas sin precio no se guardan (para quitar una partida, borra su precio). Las partidas usan las mismas categorías que los ingresos y gastos, así cada una se compara con lo registrado en Contabilidad.</p>','¿Cómo se calcula el monto?')?></section>
+<p class="hint">Monto = cantidad × precio unitario, multiplicado por <?=txEmp('participantes','personas')?> u horas según la última columna. Las filas sin precio no se guardan. En honorarios con boleta, elige <b>Líquido + ret.</b> si el valor acordado con el <?=txEmp('relator','prestador')?> es líquido: el monto suma la retención del <?=e(psRetLabel(psRetRate()))?>.</p>
+<?=$psHelp('<p><b>Monto = cantidad × precio</b>, '.txEmp('multiplicado por los participantes, las horas o ambos según la última columna. Ejemplo: relator 1 × $ 35.000 × 24 horas; coffee 2 × $ 3.500 × 15 participantes; valor SENCE por hora participante: 1 × $ 6.000 × participantes × horas.','multiplicado por las personas en terreno, las horas o ambos según la última columna, o fijo. Ejemplo: día de ROV 5 × $ 2.500.000; embarcación de apoyo 5 × $ 900.000; alimentación 1 × $ 15.000 × 4 personas.').' Las filas sin precio no se guardan (para quitar una partida, borra su precio). Las partidas usan las mismas categorías que los ingresos y gastos, así cada una se compara con lo registrado en Contabilidad.</p>','¿Cómo se calcula el monto?')?></section>
 <div class="oc-actions"><button class="primary">Guardar</button><button class="ghost" name="after" value="edit">Guardar y seguir editando</button><a class="btn ghost" href="<?=e($id?url(['pres'=>$id]):url(['tab'=>'ps']))?>">Cancelar</a></div>
 </form>
 <?php };
@@ -87,7 +97,7 @@ $list=[]; foreach($ids as $id){ $b=psGet((int)$id); $list[]=[$b,psExec($b)]; }
 $k=['n'=>0,'plan'=>0,'real'=>0,'alert'=>0,'over'=>0];
 foreach(query("SELECT id FROM ps_budgets WHERE estado='Aprobado'")->fetchAll(PDO::FETCH_COLUMN) as $id){ $b=psGet((int)$id); $x=psExec($b); $k['n']++; $k['plan']+=$x['tot']['gasto']['plan']; $k['real']+=$x['tot']['gasto']['real']; if($x['lvl']===2) $k['over']++; elseif($x['lvl']===1) $k['alert']++; }
 $nPor=(int)query("SELECT COUNT(*) FROM ps_budgets WHERE estado='Por aprobar'")->fetchColumn();
-$psHead('Presupuestos','Presupuesto de cada curso, proyecto u operación, comparado con lo registrado en Contabilidad en su centro de costo.',$canEdit?'<a class="btn primary" href="'.e(url(['tab'=>'ps_new'])).'">'.ic('plus').'Nuevo presupuesto</a>':'');
+$psHead('Presupuestos','Presupuesto de cada '.txEmp('curso, proyecto u operación','operación o proyecto').', comparado con lo registrado en Contabilidad en su centro de costo.',$canEdit?'<a class="btn primary" href="'.e(url(['tab'=>'ps_new'])).'">'.ic('plus').'Nuevo presupuesto</a>':'');
 ?>
 <div class="stat-grid">
   <a class="stat" href="<?=e(url(['tab'=>'ps','estado'=>'Aprobado']))?>"><?=ic('target')?><strong><?=$k['n']?></strong><span>Aprobados vigentes</span></a>
@@ -98,7 +108,7 @@ $psHead('Presupuestos','Presupuesto de cada curso, proyecto u operación, compar
 <?php $cnt=query('SELECT estado,COUNT(*) FROM ps_budgets GROUP BY estado')->fetchAll(PDO::FETCH_KEY_PAIR); $base=array_filter(['tab'=>'ps','q'=>$q,'tipo'=>$ft],'strlen');?>
 <nav class="ps-tabs" aria-label="Filtrar por estado"><a href="<?=e(url($base))?>"<?=$fe===''?' class="on" aria-current="page"':''?>>Todos<span class="ps-badge"><?=array_sum($cnt)?></span></a><?php foreach(['Por aprobar'=>'Por aprobar','Aprobado'=>'Aprobados','Borrador'=>'Borradores','Cerrado'=>'Cerrados'] as $s=>$lbl):?><a href="<?=e(url($base+['estado'=>$s]))?>"<?=$fe===$s?' class="on" aria-current="page"':''?>><?=$lbl?><?php if(!empty($cnt[$s])):?><span class="ps-badge<?=$s==='Por aprobar'?' ps-badge1':''?>"><?=(int)$cnt[$s]?></span><?php endif?></a><?php endforeach?></nav>
 <form method="get" class="oc-filter" role="search"><input type="hidden" name="tab" value="ps"><?php if($fe):?><input type="hidden" name="estado" value="<?=e($fe)?>"><?php endif?><label class="grow"><span class="sr">Buscar</span><input name="q" value="<?=e($q)?>" placeholder="Buscar por N°, nombre, proyecto, cliente o código…"></label>
-  <label><span class="sr">Tipo</span><select name="tipo"><option value="">Todos los tipos</option><?php foreach(PS_TIPOS as $s):?><option<?=$ft===$s?' selected':''?>><?=e($s)?></option><?php endforeach?></select></label>
+  <label><span class="sr">Tipo</span><select name="tipo"><option value="">Todos los tipos</option><?php foreach(psTipos() as $s):?><option<?=$ft===$s?' selected':''?>><?=e($s)?></option><?php endforeach?></select></label>
   <button class="ghost"><?=ic('search')?>Buscar</button><?php if($q!==''||$ft):?><a class="btn ghost" href="<?=e(url(array_filter(['tab'=>'ps','estado'=>$fe],'strlen')))?>">Limpiar</a><?php endif?></form>
 <?php if($list):?><div class="table-wrap"><table class="oc-reg ps-reg"><thead><tr><th>N°</th><th>Presupuesto</th><th class="ps-col-bar">Gastos (real / presupuesto)</th><th class="right hide-sm">Ingresos</th><th class="right hide-sm">Resultado real</th><th>Estado</th><th class="right">Acciones</th></tr></thead><tbody>
 <?php foreach($list as [$b,$x]): $gt=$x['tot']['gasto']; $it=$x['tot']['ingreso']; $pn=$b['project_id']?($psProjects[(int)$b['project_id']]??''):'';?><tr>
@@ -111,17 +121,17 @@ $psHead('Presupuestos','Presupuesto de cada curso, proyecto u operación, compar
   <td class="right nowrap"><a class="icon-btn" href="<?=e(url(['pres'=>(int)$b['id']]))?>" title="Abrir"><?=ic('eye')?><span class="sr">Abrir</span></a><a class="icon-btn" href="<?=e(url(['ps_print'=>(int)$b['id']]))?>" target="_blank" rel="noopener" title="Imprimir / PDF"><?=ic('print')?><span class="sr">Imprimir / PDF</span></a></td>
 </tr><?php endforeach?></tbody></table></div>
 <?=$psHelp('<p>Barra azul: gasto real. Tramo claro: en rendiciones por aprobar y comprometido en OC. Raya oscura: el presupuesto. En rojo, lo que se pasó del presupuesto.</p>','¿Cómo leer las barras?')?>
-<?php else:?><div class="empty-state"><?=ic('target')?><b><?=($q!==''||$fe||$ft)?'No hay presupuestos que coincidan':'Todavía no hay presupuestos'?></b><span><?=$canEdit?'Crea el primero con «Nuevo presupuesto»: por ejemplo, el de tu próximo curso.':'Cuando un editor cree un presupuesto, aparecerá aquí.'?></span></div><?php endif?>
+<?php else:?><div class="empty-state"><?=ic('target')?><b><?=($q!==''||$fe||$ft)?'No hay presupuestos que coincidan':'Todavía no hay presupuestos'?></b><span><?=$canEdit?'Crea el primero con «Nuevo presupuesto»: por ejemplo, el de tu próxim'.txEmp('o curso','a operación').'.':'Cuando un editor cree un presupuesto, aparecerá aquí.'?></span></div><?php endif?>
 
 <?php elseif($mode==='ps_new'):
 $pid=(int)$g('proyecto'); if(!isset($psProjects[$pid])) $pid=0;
 $vacia=$g('plantilla')==='vacia';
-$h=$psPosted ? $psPostedHead() : ['nombre'=>$pid?$psProjects[$pid]:'','tipo'=>'Curso','codigo'=>'','cliente'=>'','project_id'=>$pid,'center_id'=>'auto','desde'=>'','hasta'=>'','participantes'=>'','horas'=>'','alerta'=>80,'obs'=>''];
+$h=$psPosted ? $psPostedHead() : ['nombre'=>$pid?$psProjects[$pid]:'','tipo'=>psTipos()[0],'codigo'=>'','cliente'=>'','project_id'=>$pid,'center_id'=>'auto','desde'=>'','hasta'=>'','participantes'=>'','horas'=>'','alerta'=>80,'obs'=>''];
 $rows=$psPosted ? $psPostedRows() : ($vacia?[]:$psTemplate());
 ?>
 <nav class="crumbs" aria-label="Ruta"><a href="<?=e(url(['tab'=>'ps']))?>">Presupuestos</a><?=ic('chevron')?><span>Nuevo presupuesto</span></nav>
-<?php $psHead('Nuevo presupuesto','Define el período, el centro de costo y las partidas. Número asignado al guardar: '.e(psNextNumero()).'.','<div class="seg" role="group" aria-label="Partidas iniciales"><a href="'.e(url(['tab'=>'ps_new']+($pid?['proyecto'=>$pid]:[]))).'"'.(!$vacia?' class="on"':'').'>Plantilla de curso</a><a href="'.e(url(['tab'=>'ps_new','plantilla'=>'vacia']+($pid?['proyecto'=>$pid]:[]))).'"'.($vacia?' class="on"':'').'>En blanco</a></div>');?>
-<?php if(!$vacia && !$psPosted):?><p class="hint cc-note">La plantilla propone las partidas típicas de un curso: completa los precios de las que apliquen; las que queden sin precio no se guardan.</p><?php endif?>
+<?php $psHead('Nuevo presupuesto','Define el período, el centro de costo y las partidas. Número asignado al guardar: '.e(psNextNumero()).'.','<div class="seg" role="group" aria-label="Partidas iniciales"><a href="'.e(url(['tab'=>'ps_new']+($pid?['proyecto'=>$pid]:[]))).'"'.(!$vacia?' class="on"':'').'>Plantilla de '.txEmp('curso','operación ROV').'</a><a href="'.e(url(['tab'=>'ps_new','plantilla'=>'vacia']+($pid?['proyecto'=>$pid]:[]))).'"'.($vacia?' class="on"':'').'>En blanco</a></div>');?>
+<?php if(!$vacia && !$psPosted):?><p class="hint cc-note">La plantilla propone las partidas típicas de <?=txEmp('un curso','una operación con ROV')?>: completa los precios de las que apliquen; las que queden sin precio no se guardan.</p><?php endif?>
 <?php $psForm($h,$rows,0)?>
 
 <?php elseif($mode==='ps_doc'): $b=psGet($psId);
@@ -243,13 +253,13 @@ $psTab=fn(string $v): string => url(['pres'=>(int)$b['id']]+($v==='resumen'?[]:[
 </div>
 
 <?php elseif($vista==='indicadores'): $P=(int)$b['participantes'];?>
-<section class="block"><div class="block-head"><h2>Indicadores del curso</h2></div><div class="dash-com ps-unit">
+<section class="block"><div class="block-head"><h2>Indicadores <?=txEmp('del curso','de la operación')?></h2></div><div class="dash-com ps-unit">
   <?php if($u['costoPart']!==null):?><div><small>Costo por participante</small><strong><?=clp($u['costoPart'])?></strong><span><?=$u['costoPartReal']!==null?'Real: '.clp($u['costoPartReal']).' con '.(int)$b['part_reales'].' participantes':'Presupuestado con '.$P.' participantes'?></span></div><?php endif?>
   <?php if($u['costoHora']!==null):?><div><small>Costo por hora</small><strong><?=clp($u['costoHora'])?></strong><span><?=$u['costoHoraReal']!==null?'Real: '.clp($u['costoHoraReal']):'Presupuestado, '.e(ocQty((float)$b['horas'])).' horas'?></span></div><?php endif?>
   <?php if($u['ingresoPart']>0):?><div><small>Punto de equilibrio</small><strong class="<?=$u['equilibrio']!==null&&$P>0&&$u['equilibrio']>$P?'cc-out':''?>"><?=$u['equilibrio']===null?'No se alcanza':$u['equilibrio'].' participante'.($u['equilibrio']===1?'':'s')?></strong><span><?=$u['equilibrio']===null?'El ingreso por participante no cubre su costo variable.':'Mínimo para cubrir los costos'.($P>0?' · previstos '.$P:'')?></span></div>
   <div><small>Ingreso por participante</small><strong><?=clp($u['ingresoPart'])?></strong><span><?=$u['precioMin']!==null?'Mínimo para no perder con '.$P.': '.clp(max(0,$u['precioMin'])):'Costo variable por participante '.clp($u['costoVarPart'])?></span></div><?php endif?>
 </div>
-<?php if($canEdit && $b['estado']!=='Cerrado'):?><form method="post" class="ps-real card"><?=csrf()?><input type="hidden" name="id" value="<?=(int)$b['id']?>"><label>Participantes reales (inscritos o asistentes)<input type="number" name="part_reales" min="0" step="1" value="<?=(int)$b['part_reales']?:''?>" placeholder="<?=$P?:''?>"></label><button class="ghost" name="action" value="ps_real">Actualizar</button></form><?php endif?>
+<?php if($canEdit && $b['estado']!=='Cerrado'):?><form method="post" class="ps-real card"><?=csrf()?><input type="hidden" name="id" value="<?=(int)$b['id']?>"><label><?=txEmp('Participantes reales (inscritos o asistentes)','Personas reales en terreno')?><input type="number" name="part_reales" min="0" step="1" value="<?=(int)$b['part_reales']?:''?>" placeholder="<?=$P?:''?>"></label><button class="ghost" name="action" value="ps_real">Actualizar</button></form><?php endif?>
 <?=$psHelp('<p>El punto de equilibrio usa las partidas que se multiplican por participante (ingresos y costos variables) y las demás como costos fijos.</p><p>Al registrar los participantes reales, el costo por participante y por hora se recalcula con lo efectivamente gastado.</p>')?></section>
 
 <?php elseif($vista==='movimientos'): $movs=(function() use($b){ [$w,$p]=psMovWhere($b); return query('SELECT m.id, m.tipo, m.fecha, m.descripcion, m.contraparte, m.categoria, m.rendicion_id, r.estado AS restado, SUM(s.monto) AS parte'.$w.' GROUP BY m.id ORDER BY m.fecha DESC, m.id DESC LIMIT 30',$p)->fetchAll(PDO::FETCH_ASSOC); })();?>

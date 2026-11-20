@@ -13,8 +13,12 @@ if(!in_array('ret',query('SELECT name FROM pragma_table_info(\'ps_lines\')')->fe
 
 const PS_ESTADOS=['Borrador','Por aprobar','Aprobado','Cerrado'];
 const PS_TIPOS=['Curso','Proyecto','Operación','Otro'];
+/** Tipos que se ofrecen en la empresa en uso (MRM no dicta cursos). */
+function psTipos(): array { return empresa()['cursos'] ? PS_TIPOS : ['Operación','Proyecto','Otro']; }
 /** Cómo se calcula el monto de una partida: cantidad × precio × multiplicador. */
 const PS_BASES=['fijo'=>'Monto fijo','part'=>'× participantes','hora'=>'× horas','parthora'=>'× participantes × horas'];
+/** Etiquetas de las bases de cálculo en la empresa en uso (en MRM se habla de personas en terreno, no de participantes). */
+function psBases(): array { return empresa()['cursos'] ? PS_BASES : ['fijo'=>'Monto fijo','part'=>'× personas','hora'=>'× horas','parthora'=>'× personas × horas']; }
 /** Estados de OC que comprometen un gasto que aún no se paga (una OC pagada ya debería estar registrada como gasto). */
 const PS_OC_COMPROMISO=['Emitida','Aceptada','Recibida'];
 
@@ -57,7 +61,7 @@ function psPeriod(array $b): string {
 
 /** Datos generales del formulario. */
 function psFromPost(): array {
-    return ['nombre'=>ocText(post('nombre'),120),'tipo'=>in_array(post('tipo'),PS_TIPOS,true)?post('tipo'):'Curso','codigo'=>ocText(post('codigo'),40),'cliente'=>ocText(post('cliente'),160),
+    return ['nombre'=>ocText(post('nombre'),120),'tipo'=>in_array(post('tipo'),PS_TIPOS,true)?post('tipo'):psTipos()[0],'codigo'=>ocText(post('codigo'),40),'cliente'=>ocText(post('cliente'),160),
         'project_id'=>max(0,(int)post('project_id')),'center'=>post('center_id'),'desde'=>ocDateIn(post('desde')),'hasta'=>ocDateIn(post('hasta')),
         'participantes'=>max(0,min(100000,(int)ccMoney(post('participantes')))),'horas'=>round(min(100000.0,ocNum(post('horas'))),1),
         'alerta'=>post('alerta')===''?80:max(50,min(100,(int)post('alerta'))),'obs'=>ocText(post('obs'),1000)];
@@ -444,7 +448,7 @@ function psSheet(array $b): void {
 <?php foreach(['ingreso'=>'Ingresos','gasto'=>'Gastos'] as $t=>$lbl): $ls=array_values(array_filter($b['lines'],fn($l)=>$l['tipo']===$t)); if(!$ls) continue;?>
 <div class="s-sec"><?=$lbl?> presupuestados</div>
 <table class="items"><thead><tr><th class="w15">Partida</th><th>Descripción</th><th class="r w8">Cant.</th><th class="r w11">Precio unit.</th><th class="w15">Base</th><th class="r w15">Monto</th></tr></thead><tbody>
-<?php foreach($ls as $l):?><tr><td><?=e($l['categoria'])?></td><td><?=e($l['descripcion'])?></td><td class="r"><?=e(ocQty((float)$l['cantidad']))?><?=$l['unidad']!==''?' '.e($l['unidad']):''?></td><td class="r"><?=clp((int)$l['precio'])?></td><td class="muted"><?=e(PS_BASES[$l['base']]??'')?><?=$l['ret']>0?'<br>líquido; bruto '.clp(psBrutoUnit((int)$l['precio'],(float)$l['ret'])).' c/u (ret. '.e(psRetLabel((float)$l['ret'])).')':''?></td><td class="r"><?=clp((int)$l['monto'])?><?php if($l['ret']>0): [$lq,$rt]=psRetSplit($l);?><br><span class="muted">líq. <?=clp($lq)?> · ret. <?=clp($rt)?></span><?php endif?></td></tr><?php endforeach?>
+<?php foreach($ls as $l):?><tr><td><?=e($l['categoria'])?></td><td><?=e($l['descripcion'])?></td><td class="r"><?=e(ocQty((float)$l['cantidad']))?><?=$l['unidad']!==''?' '.e($l['unidad']):''?></td><td class="r"><?=clp((int)$l['precio'])?></td><td class="muted"><?=e(psBases()[$l['base']]??'')?><?=$l['ret']>0?'<br>líquido; bruto '.clp(psBrutoUnit((int)$l['precio'],(float)$l['ret'])).' c/u (ret. '.e(psRetLabel((float)$l['ret'])).')':''?></td><td class="r"><?=clp((int)$l['monto'])?><?php if($l['ret']>0): [$lq,$rt]=psRetSplit($l);?><br><span class="muted">líq. <?=clp($lq)?> · ret. <?=clp($rt)?></span><?php endif?></td></tr><?php endforeach?>
 </tbody><tfoot><tr class="total"><td colspan="4"></td><td class="r k">Total <?=mb_strtolower($lbl)?></td><td class="r v"><?=clp($tp[$t]['plan'])?></td></tr></tfoot></table>
 <?php endforeach?>
 <?php $retTot=array_sum(array_map(fn($l)=>psRetSplit($l)[1],$b['lines'])); if($retTot>0):?><div class="s-conds"><div><b>Retención de honorarios incluida en los gastos</b>&nbsp; <?=clp($retTot)?> <span class="muted">(se declara y paga al SII en el F29 del mes siguiente al pago de cada boleta)</span></div></div><?php endif?>
@@ -475,7 +479,7 @@ function psGetRequests(): void {
     $b=psGet((int)($_GET['ps_print']??$_GET['ps_csv'])); if(!$b) stop(404,'Presupuesto no encontrado.');
     if(isset($_GET['ps_print'])) {
         audit('Impresión de presupuesto',$b['numero']); ?><!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e($b['numero'])?> · Presupuesto <?=e(empresa()['corto'])?></title><link rel="stylesheet" href="assets/style.css?v=11"></head>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e($b['numero'])?> · Presupuesto <?=e(empresa()['corto'])?></title><link rel="stylesheet" href="assets/style.css?v=17"></head>
 <body class="print-page"><div class="print-bar no-print"><a class="btn ghost small" href="<?=e('index.php?pres='.$b['id'])?>">← Volver</a><span>Para imprimir o guardar como PDF usa <b>Ctrl + P</b> (<b>Cmd + P</b> en Mac), tamaño Carta y márgenes «Ninguno».</span></div>
 <div class="sheet-wrap"><?php psSheet($b)?></div></body></html><?php exit;
     }
@@ -487,7 +491,7 @@ function psGetRequests(): void {
     $out=fopen('php://output','w'); fwrite($out,"\xEF\xBB\xBF");
     $put=fn(array $cells)=>fputcsv($out,array_map(fn($v)=>is_string($v)&&preg_match('/^[=+\-@\t\r]/',$v)?"'".$v:$v,$cells),';','"','');
     $put(['Sección','Tipo','Partida','Descripción','Cantidad','Unidad','Base','Precio unitario','Presupuestado','Real','En revisión','Diferencia','% ejecución','Líquido','Retención honorarios']);
-    foreach($b['lines'] as $l) $put(['Detalle',CC_TIPOS[$l['tipo']],$l['categoria'],$l['descripcion'],str_replace('.',',',(string)(float)$l['cantidad']),$l['unidad'],PS_BASES[$l['base']]??'',(int)$l['precio'],(int)$l['monto'],'','','','',...($l['ret']>0?psRetSplit($l):['',''])]);
+    foreach($b['lines'] as $l) $put(['Detalle',CC_TIPOS[$l['tipo']],$l['categoria'],$l['descripcion'],str_replace('.',',',(string)(float)$l['cantidad']),$l['unidad'],psBases()[$l['base']]??'',(int)$l['precio'],(int)$l['monto'],'','','','',...($l['ret']>0?psRetSplit($l):['',''])]);
     foreach(['ingreso','gasto'] as $t) foreach($x['rows'][$t] as $k=>$r) $put(['Ejecución',CC_TIPOS[$t],psCatLabel((string)$k),$r['plan']===0?'No presupuestada':'','','','','',$r['plan'],$r['real'],$r['rev'],$r['plan']-$r['real'],$r['pct']===null?'':str_replace('.',',',(string)round($r['pct'],1))]);
     foreach($x['oc'] as $o) $put(['Comprometido (OC)','Gasto','',$o['numero'].' · '.$o['prov_razon'].' · '.$o['obj_titulo'].' ('.$o['estado'].')','','','','',(int)$o['total'],'','','','']);
     foreach($x['cot'] as $q) $put(['Por facturar (cotización)','Ingreso','',$q['numero'].' · '.$q['cli_razon'].' · '.$q['obj_titulo'],'','','','',(int)$q['total'],'','','','']);

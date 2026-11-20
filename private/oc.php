@@ -255,7 +255,7 @@ function ocGetRequests(): void {
     if(isset($_GET['oc_print'])) {
         $o=ocGet((int)$_GET['oc_print']); if(!$o) stop(404,'Orden de compra no encontrada.');
         audit('Impresión de OC',$o['numero']); ?><!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e($o['numero'])?> · Orden de compra <?=e(empresa()['corto'])?></title><link rel="stylesheet" href="assets/style.css?v=11"></head>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=e($o['numero'])?> · Orden de compra <?=e(empresa()['corto'])?></title><link rel="stylesheet" href="assets/style.css?v=17"></head>
 <body class="print-page"><div class="print-bar no-print"><a class="btn ghost small" href="<?=e('index.php?oc='.$o['id'])?>">← Volver</a><span>Para imprimir o guardar como PDF usa <b>Ctrl + P</b> (<b>Cmd + P</b> en Mac), tamaño Carta y márgenes «Ninguno».</span></div>
 <div class="sheet-wrap"><?php ocSheet($o)?></div></body></html><?php exit;
     }
