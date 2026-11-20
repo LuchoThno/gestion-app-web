@@ -8,7 +8,7 @@
 
 **Caso: OX3 Capacitaciones y Magallanes ROV Marine**
 
-Proyecto de título · Ingeniería en Computación e Informática · Universidad Gabriela Mistral
+Proyecto de título · Ingeniería en Computación e Informática · Universidad Gabriela Mistral (Chile)
 <br>Luis Elías Vargas Vergara
 
 ![PHP 8.3](https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white)
@@ -17,6 +17,7 @@ Proyecto de título · Ingeniería en Computación e Informática · Universidad
 ![PWA](https://img.shields.io/badge/PWA-instalable-5A0FC8?logo=pwa&logoColor=white)
 ![OWASP](https://img.shields.io/badge/OWASP-Top%2010-000000?logo=owasp&logoColor=white)
 ![Estado](https://img.shields.io/badge/estado-MVP%20en%20producción-0f2a45)
+[![Licencia](https://img.shields.io/badge/licencia-All%20rights%20reserved-b31b1b)](LICENSE)
 
 </div>
 
@@ -45,6 +46,7 @@ Plataforma web con la que dos pequeñas empresas de servicios que comparten gere
 - [Demostración](#demostración)
 - [Procesos de prueba](#procesos-de-prueba)
 - [Contexto académico](#contexto-académico)
+- [Derechos de autor y uso](#derechos-de-autor-y-uso)
 
 ## Problema
 
@@ -267,3 +269,11 @@ Pruebas manuales sobre la demostración. Cada una indica el rol con que se hace 
 | **Metodología** | Design Science Research (Peffers et al., 2007) con sprints de Scrum. |
 | **Evaluación** | Pruebas funcionales y de migración, revisión OWASP Top 10, indicadores de calidad de datos y cuestionario SUS. |
 | **Hitos** | Solemne I · 20-11-2026 → Entrega II, plataforma en producción y este repositorio · 23-12-2026 → Entrega final · 13-01-2027. |
+
+## Derechos de autor y uso
+
+© 2026 Luis Vargas Vergara. Todos los derechos reservados.
+
+Desarrollado como proyecto de título para Ingeniería en Computación e Informática, Universidad Gabriela Mistral (Chile). Se permite consultar el código con fines académicos y de evaluación. Cualquier copia, modificación, distribución o uso comercial requiere autorización escrita del autor. Los nombres y logos de OX3 y Magallanes ROV Marine pertenecen a sus empresas y se usan como caso de estudio.
+
+Ver [LICENSE](LICENSE).
