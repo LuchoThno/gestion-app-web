@@ -176,11 +176,21 @@ php -S 127.0.0.1:8080 -t public_html
 
 En `private/config.php` local usar `https_only => false`, `app_url => 'http://127.0.0.1:8080/'`, una `setup_key` propia y `smtp_host` vacío, para que la copia local no redirija al dominio de producción ni envíe correos reales.
 
+**Demostración con datos ficticios**
+
+```sh
+./demo/levantar.sh             # abre http://127.0.0.1:8080
+./demo/levantar.sh --reiniciar # borra la demo y la crea de nuevo
+```
+
+Crea una copia aparte en `demo/.run/` (ignorada por git) con proyectos, documentos, cotizaciones, órdenes de compra, ingresos, gastos, rendiciones, presupuestos, cursos (OX3) y una proforma (MRM), todo ficticio. Los usuarios `admin@demo.test`, `editor@demo.test` y `lector@demo.test` entran con la contraseña `Demo-Gestion-2026`, sin segundo factor. No usa `private/config.php` ni datos reales.
+
 **Estructura**
 
 ```
 public_html/   Raíz web: index.php, manifiesto PWA, estilos, logos e íconos
 private/       Código de la aplicación, configuración y datos (fuera de la raíz web)
+demo/          Demostración local con datos ficticios
 TECNICO.md     Documentación técnica
 ```
 
