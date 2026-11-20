@@ -18,7 +18,7 @@ $now = gmdate('c');
 // ---------- Usuarios (base común, en la primera pasada) ----------
 if ($emp === EMPRESA_BASE) {
     $pw = password_hash('Demo-Gestion-2026', PASSWORD_DEFAULT);
-    foreach ([['Administración Demo', 'admin@demo.test', 'admin'], ['Editora Demo', 'editor@demo.test', 'editor'], ['Lector Demo', 'lector@demo.test', 'lector']] as [$n, $m, $r])
+    foreach ([['Administración Demo', 'admin@demo.test', 'admin'], ['Editora Demo', 'editor@demo.test', 'editor'], ['Lector Demo', 'lector@demo.test', 'viewer']] as [$n, $m, $r])
         query('INSERT OR IGNORE INTO users(name,email,password,role) VALUES(?,?,?,?)', [$n, $m, $pw, $r]);
     foreach (query('SELECT id FROM users')->fetchAll(PDO::FETCH_COLUMN) as $id)
         foreach (array_keys(empresas()) as $k) query('INSERT OR IGNORE INTO user_companies(user_id,empresa) VALUES(?,?)', [$id, $k]);
